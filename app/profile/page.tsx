@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
   Box,
@@ -42,7 +42,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState('');
 
-  const { user, updateProfile, isUpdatingProfile, updateProfileError } = useAuth();
+  const { user, updateProfile, isUpdatingProfile, updateProfileError, isLoading } = useAuth();
 
   const {
     control,
@@ -51,11 +51,22 @@ export default function ProfilePage() {
     reset,
   } = useForm<ProfileFormData>({
     defaultValues: {
-      email: user?.email || '',
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
+      email: '',
+      firstName: '',
+      lastName: '',
     },
   });
+
+  // Update form values when user data changes
+  useEffect(() => {
+    if (user) {
+      reset({
+        email: user.email || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+      });
+    }
+  }, [user, reset]);
 
   const onSubmit = (data: ProfileFormData) => {
     updateProfile(data);
@@ -74,7 +85,7 @@ export default function ProfilePage() {
     setMessage('');
   };
 
-  if (!user) {
+  if (isLoading || !user) {
     return (
       <ProtectedRoute>
         <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

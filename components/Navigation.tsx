@@ -62,17 +62,15 @@ export default function Navigation() {
 
   const isAdmin = user?.role === 'admin';
 
-  const navigationItems = [
-    { name: 'Dashboard', href: isAdmin ? '/admin/dashboard' : '/dashboard', icon: Home },
-    { name: 'Books', href: isAdmin ? '/admin/books' : '/books', icon: LibraryBooks },
-    { name: 'Profile', href: '/profile', icon: Person },
-    ...(isAdmin ? [
-      { name: 'Users', href: '/admin/users', icon: People },
-      { name: 'Feedback', href: '/admin/feedback', icon: RateReview },
-    ] : [
-      { name: 'My Reviews', href: '/reviews', icon: RateReview },
-    ]),
-  ];
+      const navigationItems = [
+        { name: 'Dashboard', href: isAdmin ? '/admin/dashboard' : '/dashboard', icon: Home },
+        { name: 'Books', href: isAdmin ? '/admin/books' : '/books', icon: LibraryBooks },
+        { name: 'Profile', href: '/profile', icon: Person },
+        ...(isAdmin ? [
+          { name: 'Users', href: '/admin/users', icon: People },
+          { name: 'Feedback', href: '/admin/feedback', icon: RateReview },
+        ] : []),
+      ];
 
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>

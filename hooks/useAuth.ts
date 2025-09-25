@@ -42,12 +42,17 @@ export function useAuth() {
   const { data: refreshedUser, isLoading: isUserLoading } = useQuery({
     queryKey: authKeys.profile(),
     queryFn: async () => {
+      // Only run on client side
+      if (typeof window === 'undefined') {
+        return null;
+      }
+      
       const token = getCurrentToken();
       if (!token) return null;
       
       try {
         const response = await authAPI.getProfile();
-        return response.user;
+        return response.user || null;
       } catch (error) {
         // Token is invalid, clear storage
         localStorage.removeItem('authToken');
@@ -56,7 +61,7 @@ export function useAuth() {
         return null;
       }
     },
-    enabled: isInitialized && !!user, // Only run if we have a user and are initialized
+    enabled: isInitialized && !!user && !!getCurrentToken(), // Only run if we have a user, are initialized, and have a token
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
     refetchOnWindowFocus: false,
