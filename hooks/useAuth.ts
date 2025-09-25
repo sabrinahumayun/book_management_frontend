@@ -82,7 +82,7 @@ export function useAuth() {
       localStorage.setItem('user', JSON.stringify(response.user));
       setUser(response.user);
       queryClient.setQueryData(authKeys.profile(), response.user);
-      router.push('/dashboard');
+      router.push('/books');
     },
     onError: (error: any) => {
       console.error('Login failed:', error);
@@ -97,7 +97,7 @@ export function useAuth() {
       localStorage.setItem('user', JSON.stringify(response.user));
       setUser(response.user);
       queryClient.setQueryData(authKeys.profile(), response.user);
-      router.push('/dashboard');
+      router.push('/books');
     },
     onError: (error: any) => {
       console.error('Registration failed:', error);

@@ -11,6 +11,8 @@ export const booksAPI = {
     if (filters.isbn) params.append('isbn', filters.isbn);
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.createdBy) params.append('createdBy', filters.createdBy.toString());
+    if (filters.excludeCreatedBy) params.append('excludeCreatedBy', filters.excludeCreatedBy.toString());
 
     const response = await api.get(`/books?${params.toString()}`);
     return response.data;

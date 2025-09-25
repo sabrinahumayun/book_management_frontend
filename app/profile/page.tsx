@@ -28,7 +28,7 @@ import {
   ArrowBack,
 } from '@mui/icons-material';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import Navigation from '@/components/Navigation';
+import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { validateEmail } from '@/lib/utils';
 
@@ -97,8 +97,8 @@ export default function ProfilePage() {
 
   return (
     <ProtectedRoute>
-      <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }} suppressHydrationWarning>
-        <Navigation />
+      <Layout>
+        <Box sx={{ flexGrow: 1, bgcolor: '#f8fafc', minHeight: '100vh' }}>
         
         <Container maxWidth="lg" sx={{ py: 4 }}>
           {/* Header */}
@@ -384,7 +384,8 @@ export default function ProfilePage() {
             </Box>
           </Box>
         </Container>
-      </Box>
+        </Box>
+      </Layout>
     </ProtectedRoute>
   );
 }

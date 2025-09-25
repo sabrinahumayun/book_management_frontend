@@ -39,11 +39,12 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import { useForm, Controller } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import Navigation from '@/components/Navigation';
+import Layout from '@/components/Layout';
 import { useBook } from '@/hooks/useBooks';
 import { useFeedback, useCreateFeedback, useDeleteFeedback } from '@/hooks/useFeedback';
 import { CreateFeedbackData } from '@/types/feedback';
 import { useAuth } from '@/hooks/useAuth';
+import Navigation from '@/components/Navigation';
 
 interface FeedbackFormData {
   rating: number;
@@ -145,8 +146,8 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
   return (
     <ProtectedRoute>
-      <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }} suppressHydrationWarning>
-        <Navigation />
+      <Layout>
+        <Box sx={{ flexGrow: 1, bgcolor: '#f8fafc', minHeight: '100vh' }}>
         
         <Container maxWidth="lg" sx={{ py: 4 }}>
           {/* Back Button */}
@@ -217,14 +218,26 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                     </Typography>
                   </Box>
                   
-                  <Button
-                    variant="contained"
-                    startIcon={<RateReview />}
-                    onClick={handleOpenFeedback}
-                    size="large"
-                  >
-                    Leave Feedback
-                  </Button>
+                  {user?.id !== book.createdBy && (
+                    <Button
+                      variant="contained"
+                      startIcon={<RateReview />}
+                      onClick={handleOpenFeedback}
+                      size="large"
+                    >
+                      Leave Feedback
+                    </Button>
+                  )}
+                  {user?.id === book.createdBy && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<Edit />}
+                      onClick={() => router.push(`/books/${book.id}/edit`)}
+                      size="large"
+                    >
+                      Edit Book
+                    </Button>
+                  )}
                 </Box>
               </Box>
             </CardContent>
@@ -295,6 +308,8 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             </CardContent>
           </Card>
         </Container>
+        </Box>
+      </Layout>
 
         {/* Feedback Dialog */}
         <Dialog open={feedbackOpen} onClose={handleCloseFeedback} maxWidth="sm" fullWidth>
@@ -362,7 +377,6 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             </DialogActions>
           </form>
         </Dialog>
-      </Box>
     </ProtectedRoute>
   );
 }
