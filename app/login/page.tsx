@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, Controller } from 'react-hook-form';
@@ -12,7 +12,6 @@ import {
   CardContent,
   Typography,
   Container,
-  Alert,
   IconButton,
   InputAdornment,
   Paper,
@@ -28,6 +27,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { validateEmail } from '@/lib/utils';
 import DarkModeToggle from '@/components/DarkModeToggle';
+import { toast } from 'react-toastify';
 
 interface LoginFormData {
   email: string;
@@ -36,14 +36,16 @@ interface LoginFormData {
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isClient, setIsClient] = useState(false);
   const { login, isLoggingIn, loginError } = useAuth();
   const router = useRouter();
 
-  // Prevent hydration mismatch by only rendering on client
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
+  // Handle login errors with toast
+  useEffect(() => {
+    if (loginError) {
+      const errorMessage = loginError.response?.data?.message || 'Login failed. Please try again.';
+      toast.error(errorMessage);
+    }
+  }, [loginError]);
 
   const {
     control,
@@ -56,18 +58,15 @@ export default function LoginPage() {
     },
   });
 
-  const onSubmit = (data: LoginFormData) => {
-    login(data);
+  const handleFormSubmit = (data: LoginFormData) => {
+    if (!isLoggingIn) {
+      login(data);
+    }
   };
 
   const handleTogglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
-
-  // Prevent hydration mismatch
-  if (!isClient) {
-    return null;
-  }
 
   return (
     <Box
@@ -114,13 +113,7 @@ export default function LoginPage() {
           </Box>
 
           <CardContent sx={{ p: 4 }}>
-            {loginError && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {loginError.response?.data?.message || 'Login failed. Please try again.'}
-              </Alert>
-            )}
-
-            <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
+            <Box component="form" onSubmit={handleSubmit(handleFormSubmit)} sx={{ mt: 2 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Box>
                   <Controller 

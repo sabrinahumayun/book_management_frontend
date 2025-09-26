@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { authAPI } from '@/lib/api';
 import { LoginCredentials, RegisterData, User, AuthResponse } from '@/types/auth';
 import { setAuthToken, getAuthToken, removeAuthToken, setUser, getUser, removeUser } from '@/lib/authStorage';
+import { toast } from 'react-toastify';
 
 // Query keys
 export const authKeys = {
@@ -93,6 +94,9 @@ export function useAuth() {
       setUser(response.user);
       queryClient.setQueryData(authKeys.profile(), response.user);
       
+      // Show success toast
+      toast.success(`Welcome back, ${response.user.firstName}! 🎉`);
+      
       // Redirect based on user role
       const redirectPath = response.user.role === 'admin' ? '/admin/dashboard' : '/books';
       router.push(redirectPath);
@@ -111,6 +115,9 @@ export function useAuth() {
       setUser(response.user);
       queryClient.setQueryData(authKeys.profile(), response.user);
       
+      // Show success toast
+      toast.success(`Welcome to Book Portal, ${response.user.firstName}! 🚀`);
+      
       // Redirect based on user role
       const redirectPath = response.user.role === 'admin' ? '/admin/dashboard' : '/books';
       router.push(redirectPath);
@@ -128,6 +135,9 @@ export function useAuth() {
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
       queryClient.setQueryData(authKeys.profile(), updatedUser);
+      
+      // Show success toast
+      toast.success('Profile updated successfully! ✨');
     },
     onError: (error: any) => {
       console.error('Profile update failed:', error);
@@ -140,6 +150,10 @@ export function useAuth() {
     localStorage.removeItem('user');
     setUser(null);
     queryClient.clear();
+    
+    // Show success toast
+    toast.success('Logged out successfully! 👋');
+    
     router.push('/login');
   };
 

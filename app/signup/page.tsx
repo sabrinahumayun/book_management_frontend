@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, Controller } from 'react-hook-form';
@@ -12,7 +12,6 @@ import {
   CardContent,
   Typography,
   Container,
-  Alert,
   IconButton,
   InputAdornment,
   Paper,
@@ -31,6 +30,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { validateEmail, validatePassword } from '@/lib/utils';
 import DarkModeToggle from '@/components/DarkModeToggle';
+import { toast } from 'react-toastify';
 
 interface SignupFormData {
   email: string;
@@ -64,13 +64,24 @@ export default function SignupPage() {
 
   const password = watch('password');
 
-  const onSubmit = (data: SignupFormData) => {
-    // Validate passwords match
-    if (data.password !== data.confirmPassword) {
-      return;
+  // Handle register errors with toast
+  useEffect(() => {
+    if (registerError) {
+      const errorMessage = registerError.response?.data?.message || 'Registration failed. Please try again.';
+      toast.error(errorMessage);
     }
+  }, [registerError]);
 
-    registerUser(data);
+  const handleFormSubmit = (data: SignupFormData) => {
+    if (!isRegistering) {
+      // Validate passwords match
+      if (data.password !== data.confirmPassword) {
+        toast.error('Passwords do not match. Please try again.');
+        return;
+      }
+
+      registerUser(data);
+    }
   };
 
   const handleTogglePasswordVisibility = () => {
@@ -126,13 +137,7 @@ export default function SignupPage() {
           </Box>
 
           <CardContent sx={{ p: 4 }}>
-            {registerError && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {registerError.response?.data?.message || 'Registration failed. Please try again.'}
-              </Alert>
-            )}
-
-            <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
+            <Box component="form" onSubmit={handleSubmit(handleFormSubmit)} sx={{ mt: 2 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Box>
                   <Controller

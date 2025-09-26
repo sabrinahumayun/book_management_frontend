@@ -39,6 +39,7 @@ import {
   Home,
   Apps as CardViewIcon,
   List as ListViewIcon,
+  Add as LoadMoreIcon,
 } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -80,7 +81,7 @@ export default function BooksPage() {
   const [tabValue, setTabValue] = useState(0);
   const [filters, setFilters] = useState<BookFilters>({
     page: 1,
-    limit: 12,
+    limit: 16,
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
@@ -88,6 +89,8 @@ export default function BooksPage() {
   const [editBookModalOpen, setEditBookModalOpen] = useState(false);
   const [deleteBookDialogOpen, setDeleteBookDialogOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [loadedItems, setLoadedItems] = useState(16); // Track how many items are currently loaded
+  const [useLoadMore, setUseLoadMore] = useState(false); // Toggle between pagination and load more
 
   // Get user's own books without search filters for frontend filtering
   const { data: myBooksResponse, isLoading: myBooksLoading, error: myBooksError } = useMyBooks({ page: 1, limit: 100 });
@@ -100,8 +103,9 @@ export default function BooksPage() {
     setSearchTerm('');
     setFilters({
       page: 1,
-      limit: 12,
+      limit: 16,
     });
+    setLoadedItems(16);
   };
 
   // Frontend filtering logic
@@ -134,14 +138,29 @@ export default function BooksPage() {
   const handleSearch = () => {
     // No API call needed - just reset to first page for frontend filtering
     setFilters(prev => ({ ...prev, page: 1 }));
+    setLoadedItems(filters.limit || 16);
   };
 
   const handleClearFilters = () => {
     setSearchTerm('');
     setFilters({
       page: 1,
-      limit: 12,
+      limit: 16,
     });
+    setLoadedItems(16);
+  };
+
+  const handleLoadMore = () => {
+    setLoadedItems(prev => prev + (filters.limit || 16));
+  };
+
+  const handleViewModeChange = (mode: 'pagination' | 'loadmore') => {
+    setUseLoadMore(mode === 'loadmore');
+    if (mode === 'loadmore') {
+      setLoadedItems(filters.limit || 16);
+    } else {
+      setFilters(prev => ({ ...prev, page: 1 }));
+    }
   };
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
@@ -170,15 +189,28 @@ export default function BooksPage() {
   };
 
   // Calculate pagination for filtered results
-  const itemsPerPage = filters.limit || 12;
+  const itemsPerPage = filters.limit || 16;
   const myBooksTotalPages = Math.ceil(filteredMyBooks.length / itemsPerPage);
   const otherBooksTotalPages = Math.ceil(filteredOtherBooks.length / itemsPerPage);
   
-  // Paginate filtered results
-  const startIndex = ((filters.page || 1) - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedMyBooks = filteredMyBooks.slice(startIndex, endIndex);
-  const paginatedOtherBooks = filteredOtherBooks.slice(startIndex, endIndex);
+  // Paginate filtered results based on mode
+  let paginatedMyBooks, paginatedOtherBooks;
+  
+  if (useLoadMore) {
+    // Load more mode: show items up to loadedItems
+    paginatedMyBooks = filteredMyBooks.slice(0, loadedItems);
+    paginatedOtherBooks = filteredOtherBooks.slice(0, loadedItems);
+  } else {
+    // Pagination mode: use page-based slicing
+    const startIndex = ((filters.page || 1) - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    paginatedMyBooks = filteredMyBooks.slice(startIndex, endIndex);
+    paginatedOtherBooks = filteredOtherBooks.slice(startIndex, endIndex);
+  }
+  
+  // Check if there are more items to load
+  const hasMoreMyBooks = loadedItems < filteredMyBooks.length;
+  const hasMoreOtherBooks = loadedItems < filteredOtherBooks.length;
 
   const renderBookListItem = (book: any, isMyBook: boolean = false) => (
     <Card
@@ -826,9 +858,13 @@ export default function BooksPage() {
                     <FormControl sx={{ minWidth: 160 }}>
                       <InputLabel sx={{ color: 'text.secondary' }}>Items per page</InputLabel>
                       <Select
-                        value={filters.limit || 12}
+                        value={filters.limit || 16}
                         label="Items per page"
-                        onChange={(e) => setFilters(prev => ({ ...prev, limit: e.target.value as number, page: 1 }))}
+                        onChange={(e) => {
+                          const newLimit = e.target.value as number;
+                          setFilters(prev => ({ ...prev, limit: newLimit, page: 1 }));
+                          setLoadedItems(newLimit);
+                        }}
                         sx={{ 
                           borderRadius: 3,
                           backgroundColor: (theme) => theme.palette.background.paper,
@@ -837,10 +873,10 @@ export default function BooksPage() {
                             : '0 2px 8px rgba(0,0,0,0.1)',
                         }}
                       >
-                        <MenuItem value={6}>6 per page</MenuItem>
-                        <MenuItem value={12}>12 per page</MenuItem>
-                        <MenuItem value={24}>24 per page</MenuItem>
-                        <MenuItem value={48}>48 per page</MenuItem>
+                        <MenuItem value={8}>8 per page</MenuItem>
+                        <MenuItem value={16}>16 per page</MenuItem>
+                        <MenuItem value={32}>32 per page</MenuItem>
+                        <MenuItem value={64}>64 per page</MenuItem>
                       </Select>
                     </FormControl>
 
@@ -888,6 +924,51 @@ export default function BooksPage() {
                         </IconButton>
                       </Tooltip>
                     </Box>
+                    
+                    {/* Pagination Mode Toggle */}
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                        Mode:
+                      </Typography>
+                      <Tooltip title="Pagination">
+                        <IconButton
+                          onClick={() => handleViewModeChange('pagination')}
+                          sx={{
+                            backgroundColor: !useLoadMore ? 'primary.main' : 'transparent',
+                            color: !useLoadMore ? 'white' : 'text.secondary',
+                            border: '1px solid',
+                            borderColor: !useLoadMore ? 'primary.main' : 'divider',
+                            borderRadius: 2,
+                            '&:hover': {
+                              backgroundColor: !useLoadMore ? 'primary.dark' : 'action.hover',
+                              borderColor: 'primary.main',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <CardViewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Load More">
+                        <IconButton
+                          onClick={() => handleViewModeChange('loadmore')}
+                          sx={{
+                            backgroundColor: useLoadMore ? 'primary.main' : 'transparent',
+                            color: useLoadMore ? 'white' : 'text.secondary',
+                            border: '1px solid',
+                            borderColor: useLoadMore ? 'primary.main' : 'divider',
+                            borderRadius: 2,
+                            '&:hover': {
+                              backgroundColor: useLoadMore ? 'primary.dark' : 'action.hover',
+                              borderColor: 'primary.main',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <LoadMoreIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </Box>
                 </Box>
               </CardContent>
@@ -906,20 +987,20 @@ export default function BooksPage() {
               ) : (
                 <>
                   {viewMode === 'card' ? (
-                    <Box sx={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: {
-                        xs: '1fr',
-                        sm: 'repeat(2, 1fr)',
-                        md: 'repeat(2, 1fr)',
-                        lg: 'repeat(3, 1fr)',
-                        xl: 'repeat(4, 1fr)',
-                      },
-                      gap: 4,
-                      px: 1
-                    }}>
+                  <Box sx={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: {
+                      xs: '1fr',
+                      sm: 'repeat(2, 1fr)',
+                      md: 'repeat(2, 1fr)',
+                      lg: 'repeat(3, 1fr)',
+                      xl: 'repeat(4, 1fr)',
+                    },
+                    gap: 4,
+                    px: 1
+                  }}>
                       {paginatedMyBooks.map((book) => renderBookCard(book, true))}
-                    </Box>
+                  </Box>
                   ) : (
                     <Box sx={{ px: 1 }}>
                       {paginatedMyBooks.map((book) => renderBookListItem(book, true))}
@@ -972,7 +1053,35 @@ export default function BooksPage() {
                     </Box>
                   )}
                   
-                  {myBooksTotalPages > 1 && (
+                  {/* Pagination or Load More */}
+                  {useLoadMore ? (
+                    // Load More Mode
+                    hasMoreMyBooks && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                        <Button
+                          variant="contained"
+                          startIcon={<LoadMoreIcon />}
+                          onClick={handleLoadMore}
+                          size="large"
+                          sx={{
+                            borderRadius: 3,
+                            px: 4,
+                            py: 1.5,
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                              boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                            }
+                          }}
+                        >
+                          Load More ({filteredMyBooks.length - loadedItems} remaining)
+                        </Button>
+                      </Box>
+                    )
+                  ) : (
+                    // Pagination Mode
+                    myBooksTotalPages > 1 && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                       <Pagination
                         count={myBooksTotalPages}
@@ -981,6 +1090,7 @@ export default function BooksPage() {
                         color="primary"
                       />
                     </Box>
+                    )
                   )}
                 </>
               )}
@@ -999,20 +1109,20 @@ export default function BooksPage() {
               ) : (
                 <>
                   {viewMode === 'card' ? (
-                    <Box sx={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: {
-                        xs: '1fr',
-                        sm: 'repeat(2, 1fr)',
-                        md: 'repeat(2, 1fr)',
-                        lg: 'repeat(3, 1fr)',
-                        xl: 'repeat(4, 1fr)',
-                      },
-                      gap: 4,
-                      px: 1
-                    }}>
+                  <Box sx={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: {
+                      xs: '1fr',
+                      sm: 'repeat(2, 1fr)',
+                      md: 'repeat(2, 1fr)',
+                      lg: 'repeat(3, 1fr)',
+                      xl: 'repeat(4, 1fr)',
+                    },
+                    gap: 4,
+                    px: 1
+                  }}>
                       {paginatedOtherBooks.map((book) => renderBookCard(book, false))}
-                    </Box>
+                  </Box>
                   ) : (
                     <Box sx={{ px: 1 }}>
                       {paginatedOtherBooks.map((book) => renderBookListItem(book, false))}
@@ -1031,15 +1141,44 @@ export default function BooksPage() {
                     </Box>
                   )}
                   
-                  {otherBooksTotalPages > 1 && (
+                  {/* Pagination or Load More */}
+                  {useLoadMore ? (
+                    // Load More Mode
+                    hasMoreOtherBooks && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                        <Button
+                          variant="contained"
+                          startIcon={<LoadMoreIcon />}
+                          onClick={handleLoadMore}
+                          size="large"
+                          sx={{
+                            borderRadius: 3,
+                            px: 4,
+                            py: 1.5,
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                              boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                            }
+                          }}
+                        >
+                          Load More ({filteredOtherBooks.length - loadedItems} remaining)
+                        </Button>
+                      </Box>
+                    )
+                  ) : (
+                    // Pagination Mode
+                    otherBooksTotalPages > 1 && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                       <Pagination
-                        count={otherBooksTotalPages}
+                          count={otherBooksTotalPages}
                         page={filters.page || 1}
                         onChange={handlePageChange}
                         color="primary"
                       />
                     </Box>
+                    )
                   )}
                 </>
               )}

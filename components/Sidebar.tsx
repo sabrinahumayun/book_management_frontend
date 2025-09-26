@@ -84,7 +84,7 @@ export default function Sidebar({ open, onClose, onAddBook }: SidebarProps) {
     ...(isAdmin ? [
       { name: 'Admin Dashboard', href: '/admin/dashboard', icon: Dashboard, badge: null },
     ] : [
-      { name: 'Dashboard', href: '/books', icon: Dashboard, badge: myBooksCount, hasNewTabOption: true },
+      { name: 'Dashboard', href: '/books', icon: Dashboard, hasNewTabOption: true },
     ]),
     { name: 'My Feedback', href: '/my-reviews', icon: RateReview, badge: null },
     ...(isAdmin ? [
