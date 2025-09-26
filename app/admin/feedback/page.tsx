@@ -33,8 +33,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { ArrowBack as ClearIcon } from '@mui/icons-material';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminLayout from '@/components/AdminLayout';
-import { useFeedback, useDeleteFeedback } from '@/hooks/useFeedback';
-import { FeedbackFilters } from '@/types/feedback';
+import DeleteReviewDialog from '@/components/DeleteReviewDialog';
+import { useAdminReviews, useDeleteFeedback } from '@/hooks/useFeedback';
+import { FeedbackFilters, Feedback } from '@/types/feedback';
 
 export default function AdminFeedbackPage() {
   const [filters, setFilters] = useState<FeedbackFilters>({
@@ -42,9 +43,11 @@ export default function AdminFeedbackPage() {
     limit: 10,
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
 
-  // Get all feedback without search filters for frontend filtering
-  const { data: feedbackResponse, isLoading, error } = useFeedback({ page: 1, limit: 100 });
+  // Get all admin reviews without search filters for frontend filtering
+  const { data: feedbackResponse, isLoading, error } = useAdminReviews({ page: 1, limit: 100 });
   const deleteFeedbackMutation = useDeleteFeedback();
 
   // Frontend filtering logic
@@ -79,10 +82,14 @@ export default function AdminFeedbackPage() {
     }));
   };
 
-  const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this feedback?')) {
-      deleteFeedbackMutation.mutate(id);
-    }
+  const handleDelete = (feedback: Feedback) => {
+    setSelectedFeedback(feedback);
+    setDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setSelectedFeedback(null);
   };
 
 
@@ -168,7 +175,7 @@ export default function AdminFeedbackPage() {
                         <Rating value={feedback.rating} readOnly size="small" />
                         <IconButton
                           size="small"
-                          onClick={() => handleDelete(feedback.id)}
+                          onClick={() => handleDelete(feedback)}
                           color="error"
                         >
                           <DeleteIcon />
@@ -209,6 +216,13 @@ export default function AdminFeedbackPage() {
             </>
           )}
         </Container>
+
+        {/* Delete Review Modal */}
+        <DeleteReviewDialog 
+          open={deleteModalOpen} 
+          onClose={handleCloseDeleteModal}
+          feedback={selectedFeedback}
+        />
       </AdminLayout>
     </ProtectedRoute>
   );

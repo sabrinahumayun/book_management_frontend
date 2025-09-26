@@ -24,15 +24,16 @@ import {
   Star,
   RateReview,
   Edit,
-  Delete,
   ArrowBack,
 } from '@mui/icons-material';
+import { Warning as DeleteIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
-import { useFeedback, useDeleteFeedback } from '@/hooks/useFeedback';
+import { useMyReviews, useDeleteFeedback } from '@/hooks/useFeedback';
 import { useAuth } from '@/hooks/useAuth';
 import EditFeedbackModal from '@/components/EditFeedbackModal';
+import DeleteReviewDialog from '@/components/DeleteReviewDialog';
 import { Feedback } from '@/types/feedback';
 
 export default function MyReviewsPage() {
@@ -40,11 +41,11 @@ export default function MyReviewsPage() {
   const { user } = useAuth();
   const [page, setPage] = useState(1);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
   const limit = 10;
 
-  const { data: feedbackResponse, isLoading, error } = useFeedback({
-    userId: user?.id,
+  const { data: feedbackResponse, isLoading, error } = useMyReviews({
     page,
     limit,
   });
@@ -65,10 +66,14 @@ export default function MyReviewsPage() {
     setSelectedFeedback(null);
   };
 
-  const handleDeleteFeedback = (feedbackId: number) => {
-    if (window.confirm('Are you sure you want to delete this review?')) {
-      deleteFeedbackMutation.mutate(feedbackId);
-    }
+  const handleDeleteFeedback = (feedback: Feedback) => {
+    setSelectedFeedback(feedback);
+    setDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setSelectedFeedback(null);
   };
 
   const feedbacks = feedbackResponse?.data || [];
@@ -310,7 +315,7 @@ export default function MyReviewsPage() {
                           <Tooltip title="Delete Review">
                             <IconButton
                               size="small"
-                              onClick={() => handleDeleteFeedback(feedback.id)}
+                              onClick={() => handleDeleteFeedback(feedback)}
                               color="error"
                               disabled={deleteFeedbackMutation.isPending}
                               sx={{
@@ -319,7 +324,7 @@ export default function MyReviewsPage() {
                                 },
                               }}
                             >
-                              <Delete fontSize="small" />
+                              <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         </Box>
@@ -349,6 +354,13 @@ export default function MyReviewsPage() {
         <EditFeedbackModal 
           open={editModalOpen} 
           onClose={handleCloseEditModal}
+          feedback={selectedFeedback}
+        />
+
+        {/* Delete Review Modal */}
+        <DeleteReviewDialog 
+          open={deleteModalOpen} 
+          onClose={handleCloseDeleteModal}
           feedback={selectedFeedback}
         />
       </Layout>

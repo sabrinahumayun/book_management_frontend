@@ -31,7 +31,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyBooks } from '@/hooks/useBooks';
-import { useFeedback } from '@/hooks/useFeedback';
+import { useMyReviews } from '@/hooks/useFeedback';
 import { validateEmail } from '@/lib/utils';
 
 interface ProfileFormData {
@@ -48,7 +48,7 @@ export default function ProfilePage() {
   
   // Get user statistics
   const { data: myBooksResponse } = useMyBooks({ page: 1, limit: 100 });
-  const { data: feedbackResponse } = useFeedback({ page: 1, limit: 100 });
+  const { data: feedbackResponse } = useMyReviews({ page: 1, limit: 100 });
   
   // Calculate statistics
   const booksRead = myBooksResponse?.data?.length || 0;
