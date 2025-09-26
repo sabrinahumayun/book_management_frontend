@@ -644,8 +644,10 @@ export default function BooksPage() {
                         onChange={(e) => setFilters(prev => ({ ...prev, limit: e.target.value as number, page: 1 }))}
                         sx={{ 
                           borderRadius: 3,
-                          backgroundColor: 'white',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                          backgroundColor: (theme) => theme.palette.background.paper,
+                          boxShadow: (theme) => theme.palette.mode === 'dark' 
+                            ? '0 2px 8px rgba(0,0,0,0.3)'
+                            : '0 2px 8px rgba(0,0,0,0.1)',
                         }}
                       >
                         <MenuItem value={6}>6 per page</MenuItem>

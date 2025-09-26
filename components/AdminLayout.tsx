@@ -329,9 +329,11 @@ export default function AdminLayout({ children, onAddBook }: AdminLayoutProps) {
         sx={{
           width: { md: `calc(100% - ${sidebarOpen ? drawerWidth : 0}px)` },
           ml: { md: sidebarOpen ? `${drawerWidth}px` : 0 },
-          backgroundColor: 'white',
+          backgroundColor: (theme) => theme.palette.background.paper,
           color: 'text.primary',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          boxShadow: (theme) => theme.palette.mode === 'dark' 
+            ? '0 1px 3px rgba(0,0,0,0.3)'
+            : '0 1px 3px rgba(0,0,0,0.1)',
         }}
       >
         <Toolbar>
