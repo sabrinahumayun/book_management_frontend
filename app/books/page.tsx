@@ -37,6 +37,8 @@ import {
   // Add,
   // Refresh as ClearIcon,
   Home,
+  Apps as CardViewIcon,
+  List as ListViewIcon,
 } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -81,6 +83,7 @@ export default function BooksPage() {
     limit: 12,
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const [addBookModalOpen, setAddBookModalOpen] = useState(false);
   const [editBookModalOpen, setEditBookModalOpen] = useState(false);
   const [deleteBookDialogOpen, setDeleteBookDialogOpen] = useState(false);
@@ -177,6 +180,180 @@ export default function BooksPage() {
   const paginatedMyBooks = filteredMyBooks.slice(startIndex, endIndex);
   const paginatedOtherBooks = filteredOtherBooks.slice(startIndex, endIndex);
 
+  const renderBookListItem = (book: any, isMyBook: boolean = false) => (
+    <Card
+      key={book.id}
+      sx={{
+        mb: 2,
+        borderRadius: 3,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        background: (theme) => theme.palette.mode === 'dark' 
+          ? 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)'
+          : 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+        boxShadow: (theme) => theme.palette.mode === 'dark' 
+          ? '0 4px 20px rgba(0,0,0,0.3)'
+          : '0 4px 20px rgba(0,0,0,0.08)',
+        border: (theme) => theme.palette.mode === 'dark' 
+          ? '1px solid rgba(255,255,255,0.1)'
+          : '1px solid rgba(0,0,0,0.05)',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: (theme) => theme.palette.mode === 'dark' 
+            ? '0 8px 32px rgba(0,0,0,0.4)'
+            : '0 8px 32px rgba(0,0,0,0.15)',
+        },
+      }}
+      onClick={() => router.push(`/books/${book.id}`)}
+    >
+      <Box sx={{ display: 'flex', p: 4 }}>
+        {/* Book Cover */}
+        <Box
+          sx={{
+            width: 100,
+            height: 100,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: 3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mr: 3,
+            flexShrink: 0,
+          }}
+        >
+          <LibraryBooks sx={{ fontSize: 48, color: 'white' }} />
+        </Box>
+
+        {/* Book Info */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              fontWeight: 600, 
+              mb: 1.5,
+              color: 'text.primary',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {book.title}
+          </Typography>
+          
+          <Typography 
+            variant="body1" 
+            color="text.secondary" 
+            sx={{ mb: 2, fontWeight: 500 }}
+          >
+            by {book.author}
+          </Typography>
+          
+          <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
+            <Chip
+              label={`ISBN: ${book.isbn}`}
+              size="medium"
+              sx={{
+                backgroundColor: 'primary.light',
+                color: 'white',
+                fontSize: '0.8rem',
+                height: 28,
+              }}
+            />
+          </Box>
+          
+          {/* Creator Info */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            p: 1.5,
+            backgroundColor: 'rgba(0,0,0,0.02)',
+            borderRadius: 2,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}>
+                <Person sx={{ fontSize: 14 }} />
+              </Avatar>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                {book.creator?.firstName || 'Unknown'} {book.creator?.lastName || 'User'}
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+              {new Date(book.createdAt).toLocaleDateString()}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Actions */}
+        <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+          {isMyBook && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="Edit Book">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditBook(book);
+                  }}
+                  sx={{
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: 'primary.dark',
+                    },
+                  }}
+                >
+                  <Edit fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete Book">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteBook(book);
+                  }}
+                  sx={{
+                    backgroundColor: 'error.main',
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: 'error.dark',
+                    },
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
+          
+          <Button
+            variant="contained"
+            size="medium"
+            sx={{
+              ml: 2,
+              borderRadius: 3,
+              px: 4,
+              py: 1.5,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+              },
+              transition: 'all 0.2s ease',
+            }}
+          >
+            View Details
+          </Button>
+        </Box>
+      </Box>
+    </Card>
+  );
+
   const renderBookCard = (book: any, isMyBook: boolean = false) => (
     <Card
       key={book.id}
@@ -254,10 +431,10 @@ export default function BooksPage() {
           className="book-actions"
           sx={{
             position: 'absolute',
-            top: 12,
-            right: 12,
+            top: 16,
+            right: 16,
             display: 'flex',
-            gap: 1,
+            gap: 1.5,
             opacity: 0,
             transform: 'translateY(-10px)',
             transition: 'all 0.3s ease',
@@ -267,19 +444,24 @@ export default function BooksPage() {
             <>
               <Tooltip title="Edit Book">
                 <IconButton
-                  size="small"
+                  size="medium"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleEditBook(book);
                   }}
                   sx={{
-                    backgroundColor: 'rgba(255,255,255,0.9)',
+                    backgroundColor: 'rgba(255,255,255,0.95)',
                     color: 'primary.main',
+                    width: 40,
+                    height: 40,
+                    p: 1,
                     '&:hover': {
                       backgroundColor: 'white',
                       transform: 'scale(1.1)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                     },
                     boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                    border: '1px solid rgba(255,255,255,0.2)',
                   }}
                 >
                   <Edit fontSize="small" />
@@ -287,19 +469,24 @@ export default function BooksPage() {
               </Tooltip>
               <Tooltip title="Delete Book">
                 <IconButton
-                  size="small"
+                  size="medium"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteBook(book);
                   }}
                   sx={{
-                    backgroundColor: 'rgba(255,255,255,0.9)',
+                    backgroundColor: 'rgba(255,255,255,0.95)',
                     color: 'error.main',
+                    width: 40,
+                    height: 40,
+                    p: 1,
                     '&:hover': {
                       backgroundColor: 'white',
                       transform: 'scale(1.1)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                     },
                     boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                    border: '1px solid rgba(255,255,255,0.2)',
                   }}
                 >
                   <DeleteIcon fontSize="small" />
@@ -656,6 +843,51 @@ export default function BooksPage() {
                         <MenuItem value={48}>48 per page</MenuItem>
                       </Select>
                     </FormControl>
+
+                    {/* View Toggle Buttons */}
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                        View:
+                      </Typography>
+                      <Tooltip title="Card View">
+                        <IconButton
+                          onClick={() => setViewMode('card')}
+                          sx={{
+                            backgroundColor: viewMode === 'card' ? 'primary.main' : 'transparent',
+                            color: viewMode === 'card' ? 'white' : 'text.secondary',
+                            border: '1px solid',
+                            borderColor: viewMode === 'card' ? 'primary.main' : 'divider',
+                            borderRadius: 2,
+                            '&:hover': {
+                              backgroundColor: viewMode === 'card' ? 'primary.dark' : 'action.hover',
+                              borderColor: 'primary.main',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <CardViewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="List View">
+                        <IconButton
+                          onClick={() => setViewMode('list')}
+                          sx={{
+                            backgroundColor: viewMode === 'list' ? 'primary.main' : 'transparent',
+                            color: viewMode === 'list' ? 'white' : 'text.secondary',
+                            border: '1px solid',
+                            borderColor: viewMode === 'list' ? 'primary.main' : 'divider',
+                            borderRadius: 2,
+                            '&:hover': {
+                              backgroundColor: viewMode === 'list' ? 'primary.dark' : 'action.hover',
+                              borderColor: 'primary.main',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <ListViewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </Box>
                 </Box>
               </CardContent>
@@ -673,20 +905,26 @@ export default function BooksPage() {
                 </Alert>
               ) : (
                 <>
-                  <Box sx={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: {
-                      xs: '1fr',
-                      sm: 'repeat(2, 1fr)',
-                      md: 'repeat(2, 1fr)',
-                      lg: 'repeat(3, 1fr)',
-                      xl: 'repeat(4, 1fr)',
-                    },
-                    gap: 4,
-                    px: 1
-                  }}>
-                    {paginatedMyBooks.map((book) => renderBookCard(book, true))}
-                  </Box>
+                  {viewMode === 'card' ? (
+                    <Box sx={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: {
+                        xs: '1fr',
+                        sm: 'repeat(2, 1fr)',
+                        md: 'repeat(2, 1fr)',
+                        lg: 'repeat(3, 1fr)',
+                        xl: 'repeat(4, 1fr)',
+                      },
+                      gap: 4,
+                      px: 1
+                    }}>
+                      {paginatedMyBooks.map((book) => renderBookCard(book, true))}
+                    </Box>
+                  ) : (
+                    <Box sx={{ px: 1 }}>
+                      {paginatedMyBooks.map((book) => renderBookListItem(book, true))}
+                    </Box>
+                  )}
                   
                   {filteredMyBooks.length === 0 && (
                     <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -760,20 +998,26 @@ export default function BooksPage() {
                 </Alert>
               ) : (
                 <>
-                  <Box sx={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: {
-                      xs: '1fr',
-                      sm: 'repeat(2, 1fr)',
-                      md: 'repeat(2, 1fr)',
-                      lg: 'repeat(3, 1fr)',
-                      xl: 'repeat(4, 1fr)',
-                    },
-                    gap: 4,
-                    px: 1
-                  }}>
-                    {paginatedOtherBooks.map((book) => renderBookCard(book, false))}
-                  </Box>
+                  {viewMode === 'card' ? (
+                    <Box sx={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: {
+                        xs: '1fr',
+                        sm: 'repeat(2, 1fr)',
+                        md: 'repeat(2, 1fr)',
+                        lg: 'repeat(3, 1fr)',
+                        xl: 'repeat(4, 1fr)',
+                      },
+                      gap: 4,
+                      px: 1
+                    }}>
+                      {paginatedOtherBooks.map((book) => renderBookCard(book, false))}
+                    </Box>
+                  ) : (
+                    <Box sx={{ px: 1 }}>
+                      {paginatedOtherBooks.map((book) => renderBookListItem(book, false))}
+                    </Box>
+                  )}
                   
                   {filteredOtherBooks.length === 0 && (
                     <Box sx={{ textAlign: 'center', py: 8 }}>

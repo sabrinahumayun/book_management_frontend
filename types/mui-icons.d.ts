@@ -28,4 +28,6 @@ declare module '@mui/icons-material' {
   export const Menu: SvgIconComponent;
   export const LogOut: SvgIconComponent;
   export const Home: SvgIconComponent;
+  export const Apps: SvgIconComponent;
+  export const List: SvgIconComponent;
 }
