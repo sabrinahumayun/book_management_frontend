@@ -20,6 +20,16 @@ export function useFeedback(filters: FeedbackFilters = {}) {
   });
 }
 
+// Hook for getting feedback for a specific book
+export function useFeedbackByBook(bookId: number, filters: FeedbackFilters = {}) {
+  return useQuery({
+    queryKey: [...feedbackKeys.lists(), 'book', bookId, filters],
+    queryFn: () => feedbackAPI.getFeedbackByBook(bookId, filters),
+    enabled: !!bookId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
 // Hook for getting a single feedback
 export function useFeedbackById(id: number) {
   return useQuery({

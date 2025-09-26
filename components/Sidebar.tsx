@@ -100,6 +100,7 @@ export default function Sidebar({ open, onClose, onAddBook }: SidebarProps) {
   const quickActions = [
     { name: 'Search Books', icon: LibraryBooks, action: () => router.push('/books') },
     { name: 'My Profile', icon: Person, action: () => router.push('/profile') },
+    { name: 'My Reviews', icon: RateReview, action: () => router.push('/my-reviews') },
     ...(isAdmin ? [
       { name: 'Settings', icon: Settings, action: () => router.push('/admin/settings') },
     ] : []),
