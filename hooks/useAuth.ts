@@ -14,7 +14,15 @@ export const authKeys = {
 const getCurrentUser = (): User | null => {
   if (typeof window === 'undefined') return null;
   const userStr = localStorage.getItem('user');
-  return userStr ? JSON.parse(userStr) : null;
+  if (!userStr) return null;
+  
+  try {
+    return JSON.parse(userStr);
+  } catch (error) {
+    console.error('Error parsing user data from localStorage:', error);
+    localStorage.removeItem('user');
+    return null;
+  }
 };
 
 const getCurrentToken = (): string | null => {

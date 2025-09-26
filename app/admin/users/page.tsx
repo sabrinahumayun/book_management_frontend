@@ -47,6 +47,8 @@ import {
 import { useUsers, useDeleteUser } from '@/hooks/useUsers';
 import { UserFilters } from '@/lib/usersApi';
 import { User } from '@/types/auth';
+import EditUserModal from '@/components/EditUserModal';
+import AddUserModal from '@/components/AddUserModal';
 
 export default function AdminUsersPage() {
   const [filters, setFilters] = useState<UserFilters>({
@@ -55,6 +57,8 @@ export default function AdminUsersPage() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editUserOpen, setEditUserOpen] = useState(false);
+  const [addUserOpen, setAddUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const { data: usersResponse, isLoading, error } = useUsers(filters);
@@ -84,6 +88,8 @@ export default function AdminUsersPage() {
     setFilters({
       page: 1,
       limit: 10,
+      search: undefined,
+      role: undefined,
     });
   };
 
@@ -92,6 +98,11 @@ export default function AdminUsersPage() {
       ...prev,
       page,
     }));
+  };
+
+  const handleEditClick = (user: User) => {
+    setSelectedUser(user);
+    setEditUserOpen(true);
   };
 
   const handleDeleteClick = (user: User) => {
@@ -146,6 +157,7 @@ export default function AdminUsersPage() {
                 <Button
                   variant="contained"
                   startIcon={<PersonAdd />}
+                  onClick={() => setAddUserOpen(true)}
                   sx={{ minWidth: 140 }}
                 >
                   Add User
@@ -182,7 +194,14 @@ export default function AdminUsersPage() {
                   <Select
                     value={filters.role || ''}
                     label="Role"
-                    onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value as 'admin' | 'user' || undefined }))}
+                    onChange={(e) => {
+                      const role = e.target.value;
+                      setFilters(prev => ({ 
+                        ...prev, 
+                        role: role === '' ? undefined : role as 'admin' | 'user',
+                        page: 1 // Reset to first page when filter changes
+                      }));
+                    }}
                   >
                     <MenuItem value="">All Roles</MenuItem>
                     <MenuItem value="admin">Admin</MenuItem>
@@ -283,7 +302,11 @@ export default function AdminUsersPage() {
                             <TableCell align="right">
                               <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                                 <Tooltip title="Edit User">
-                                  <IconButton size="small" color="primary">
+                                  <IconButton 
+                                    size="small" 
+                                    color="primary"
+                                    onClick={() => handleEditClick(user)}
+                                  >
                                     <Edit />
                                   </IconButton>
                                 </Tooltip>
@@ -344,6 +367,22 @@ export default function AdminUsersPage() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Edit User Modal */}
+        <EditUserModal
+          open={editUserOpen}
+          onClose={() => {
+            setEditUserOpen(false);
+            setSelectedUser(null);
+          }}
+          user={selectedUser}
+        />
+
+        {/* Add User Modal */}
+        <AddUserModal
+          open={addUserOpen}
+          onClose={() => setAddUserOpen(false)}
+        />
       </AdminLayout>
     </ProtectedRoute>
   );

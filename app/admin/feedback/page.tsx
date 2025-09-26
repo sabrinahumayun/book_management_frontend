@@ -50,6 +50,7 @@ export default function AdminFeedbackPage() {
     setFilters(prev => ({
       ...prev,
       page: 1,
+      search: searchTerm || undefined,
     }));
   };
 
@@ -95,7 +96,7 @@ export default function AdminFeedbackPage() {
             <CardContent>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                 <TextField
-                  placeholder="Search feedback..."
+                  placeholder="Search by username..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   InputProps={{

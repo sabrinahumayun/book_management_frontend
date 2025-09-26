@@ -29,6 +29,7 @@ export interface UpdateUserData {
   firstName?: string;
   lastName?: string;
   role?: 'admin' | 'user';
+  isActive?: boolean;
 }
 
 export const usersAPI = {
@@ -82,13 +83,13 @@ export const usersAPI = {
 
   // Create new user (Admin only)
   createUser: async (userData: CreateUserData): Promise<User> => {
-    const response = await api.post('/auth/users', userData);
+    const response = await api.post('/auth/register', userData);
     return response.data;
   },
 
   // Update user (Admin only)
   updateUser: async (id: number, userData: UpdateUserData): Promise<User> => {
-    const response = await api.put(`/auth/users/${id}`, userData);
+    const response = await api.patch(`/auth/users/${id}`, userData);
     return response.data;
   },
 

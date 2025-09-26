@@ -8,6 +8,7 @@ export const feedbackAPI = {
     
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.search) params.append('search', filters.search);
 
     const response = await api.get(`/feedback?${params.toString()}`);
     return response.data;

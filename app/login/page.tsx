@@ -103,7 +103,7 @@ export default function LoginPage() {
             <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Box>
-                  <Controller
+                  <Controller 
                     name="email"
                     control={control}
                     rules={{

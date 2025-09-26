@@ -62,6 +62,7 @@ export default function AdminBooksPage() {
     limit: 10,
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchType, setSearchType] = useState<'title' | 'author' | 'isbn' | 'createdBy'>('title');
 
   const { data: booksResponse, isLoading, error } = useBooks(filters);
   const createBookMutation = useCreateBook();
@@ -129,15 +130,41 @@ export default function AdminBooksPage() {
   };
 
   const handleSearch = () => {
-    setFilters(prev => ({
-      ...prev,
-      title: searchTerm || undefined,
+    const searchFilters: BookFilters = {
+      ...filters,
       page: 1,
-    }));
+    };
+
+    // Clear all search fields first
+    delete searchFilters.title;
+    delete searchFilters.author;
+    delete searchFilters.isbn;
+    delete searchFilters.createdBy;
+
+    // Set the appropriate search field based on searchType
+    if (searchTerm) {
+      switch (searchType) {
+        case 'title':
+          searchFilters.title = searchTerm;
+          break;
+        case 'author':
+          searchFilters.author = searchTerm;
+          break;
+        case 'isbn':
+          searchFilters.isbn = searchTerm;
+          break;
+        case 'createdBy':
+          searchFilters.createdBy = searchTerm;
+          break;
+      }
+    }
+
+    setFilters(searchFilters);
   };
 
   const handleClearFilters = () => {
     setSearchTerm('');
+    setSearchType('title');
     setFilters({
       page: 1,
       limit: 10,
@@ -185,8 +212,21 @@ export default function AdminBooksPage() {
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                <FormControl sx={{ minWidth: 120 }}>
+                  <InputLabel>Search By</InputLabel>
+                  <Select
+                    value={searchType}
+                    label="Search By"
+                    onChange={(e) => setSearchType(e.target.value as 'title' | 'author' | 'isbn' | 'createdBy')}
+                  >
+                    <MenuItem value="title">Title</MenuItem>
+                    <MenuItem value="author">Author</MenuItem>
+                    <MenuItem value="isbn">ISBN</MenuItem>
+                    <MenuItem value="createdBy">Created By</MenuItem>
+                  </Select>
+                </FormControl>
                 <TextField
-                  placeholder="Search by title..."
+                  placeholder={`Search by ${searchType}...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   InputProps={{
