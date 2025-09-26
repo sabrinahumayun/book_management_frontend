@@ -44,7 +44,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useForm, Controller } from 'react-hook-form';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import Navigation from '@/components/Navigation';
+import AdminLayout from '@/components/AdminLayout';
 import { useBooks, useCreateBook, useUpdateBook, useDeleteBook } from '@/hooks/useBooks';
 import { Book, CreateBookData, UpdateBookData, BookFilters } from '@/types/books';
 
@@ -156,8 +156,7 @@ export default function AdminBooksPage() {
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }} suppressHydrationWarning>
-        <Navigation />
+      <AdminLayout>
         
         <Container maxWidth="xl" sx={{ py: 4 }}>
           {/* Header */}
@@ -424,7 +423,7 @@ export default function AdminBooksPage() {
             </DialogActions>
           </form>
         </Dialog>
-      </Box>
+      </AdminLayout>
     </ProtectedRoute>
   );
 }

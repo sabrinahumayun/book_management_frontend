@@ -82,7 +82,10 @@ export function useAuth() {
       localStorage.setItem('user', JSON.stringify(response.user));
       setUser(response.user);
       queryClient.setQueryData(authKeys.profile(), response.user);
-      router.push('/books');
+      
+      // Redirect based on user role
+      const redirectPath = response.user.role === 'admin' ? '/admin/dashboard' : '/books';
+      router.push(redirectPath);
     },
     onError: (error: any) => {
       console.error('Login failed:', error);
@@ -97,7 +100,10 @@ export function useAuth() {
       localStorage.setItem('user', JSON.stringify(response.user));
       setUser(response.user);
       queryClient.setQueryData(authKeys.profile(), response.user);
-      router.push('/books');
+      
+      // Redirect based on user role
+      const redirectPath = response.user.role === 'admin' ? '/admin/dashboard' : '/books';
+      router.push(redirectPath);
     },
     onError: (error: any) => {
       console.error('Registration failed:', error);

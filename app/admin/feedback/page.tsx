@@ -32,7 +32,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import ClearIcon from '@mui/icons-material/Clear';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import Navigation from '@/components/Navigation';
+import AdminLayout from '@/components/AdminLayout';
 import { useFeedback, useDeleteFeedback } from '@/hooks/useFeedback';
 import { FeedbackFilters } from '@/types/feedback';
 
@@ -79,8 +79,7 @@ export default function AdminFeedbackPage() {
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }} suppressHydrationWarning>
-        <Navigation />
+      <AdminLayout>
         
         <Container maxWidth="xl" sx={{ py: 4 }}>
           <Box sx={{ mb: 4 }}>
@@ -201,7 +200,7 @@ export default function AdminFeedbackPage() {
             </>
           )}
         </Container>
-      </Box>
+      </AdminLayout>
     </ProtectedRoute>
   );
 }
