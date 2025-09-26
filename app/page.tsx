@@ -31,24 +31,13 @@ export default function Home() {
   const { isAuthenticated, user, isLoading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      // Redirect authenticated users to their appropriate dashboard
-      const redirectPath = user?.role === 'admin' ? '/admin/dashboard' : '/dashboard';
-      router.push(redirectPath);
-    }
-  }, [isAuthenticated, user, isLoading, router]);
-
+  // Show loading only briefly to avoid flash
   if (isLoading) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Box sx={{ width: 40, height: 40, border: '4px solid #f3f3f3', borderTop: '4px solid #1976d2', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
       </Box>
     );
-  }
-
-  if (isAuthenticated) {
-    return null; // Will redirect to dashboard
   }
 
   return (
@@ -63,16 +52,40 @@ export default function Home() {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Link href="/login" style={{ textDecoration: 'none' }}>
-              <Button variant="text" color="primary">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/signup" style={{ textDecoration: 'none' }}>
-              <Button variant="contained" color="primary">
-                Get Started
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link href="/books" style={{ textDecoration: 'none' }}>
+                  <Button variant="text" color="primary">
+                    My Books
+                  </Button>
+                </Link>
+                {user?.role === 'admin' && (
+                  <Link href="/admin/dashboard" style={{ textDecoration: 'none' }}>
+                    <Button variant="text" color="primary">
+                      Admin Panel
+                    </Button>
+                  </Link>
+                )}
+                <Link href="/profile" style={{ textDecoration: 'none' }}>
+                  <Button variant="outlined" color="primary">
+                    Profile
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" style={{ textDecoration: 'none' }}>
+                  <Button variant="text" color="primary">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup" style={{ textDecoration: 'none' }}>
+                  <Button variant="contained" color="primary">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </Box>
         </Toolbar>
       </AppBar>
@@ -90,37 +103,77 @@ export default function Home() {
           role-based access, and modern interface design.
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/signup" style={{ textDecoration: 'none' }}>
-            <Button
-              variant="contained"
-              size="large"
-              endIcon={<ArrowForward />}
-              sx={{
-                bgcolor: 'white',
-                color: 'primary.main',
-                '&:hover': { bgcolor: 'grey.100' },
-                px: 4,
-                py: 1.5,
-              }}
-            >
-              Get Started Free
-            </Button>
-          </Link>
-          <Link href="/login" style={{ textDecoration: 'none' }}>
-            <Button
-              variant="outlined"
-              size="large"
-              sx={{
-                borderColor: 'white',
-                color: 'white',
-                '&:hover': { borderColor: 'white', bgcolor: 'rgba(255, 255, 255, 0.1)' },
-                px: 4,
-                py: 1.5,
-              }}
-            >
-              Sign In
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <Link href="/books" style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  endIcon={<ArrowForward />}
+                  sx={{
+                    bgcolor: 'white',
+                    color: 'primary.main',
+                    '&:hover': { bgcolor: 'grey.100' },
+                    px: 4,
+                    py: 1.5,
+                  }}
+                >
+                  Go to My Books
+                </Button>
+              </Link>
+              {user?.role === 'admin' && (
+                <Link href="/admin/dashboard" style={{ textDecoration: 'none' }}>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    sx={{
+                      borderColor: 'white',
+                      color: 'white',
+                      '&:hover': { borderColor: 'white', bgcolor: 'rgba(255, 255, 255, 0.1)' },
+                      px: 4,
+                      py: 1.5,
+                    }}
+                  >
+                    Admin Dashboard
+                  </Button>
+                </Link>
+              )}
+            </>
+          ) : (
+            <>
+              <Link href="/signup" style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  endIcon={<ArrowForward />}
+                  sx={{
+                    bgcolor: 'white',
+                    color: 'primary.main',
+                    '&:hover': { bgcolor: 'grey.100' },
+                    px: 4,
+                    py: 1.5,
+                  }}
+                >
+                  Get Started Free
+                </Button>
+              </Link>
+              <Link href="/login" style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  sx={{
+                    borderColor: 'white',
+                    color: 'white',
+                    '&:hover': { borderColor: 'white', bgcolor: 'rgba(255, 255, 255, 0.1)' },
+                    px: 4,
+                    py: 1.5,
+                  }}
+                >
+                  Sign In
+                </Button>
+              </Link>
+            </>
+          )}
         </Box>
       </Container>
 
@@ -239,28 +292,57 @@ export default function Home() {
       {/* CTA Section */}
       <Box sx={{ bgcolor: 'primary.main', py: 8 }}>
         <Container maxWidth="md" sx={{ textAlign: 'center' }}>
-          <Typography variant="h3" component="h2" fontWeight="bold" sx={{ color: 'white', mb: 2 }}>
-            Ready to get started?
-          </Typography>
-          <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.9)', mb: 4 }}>
-            Join thousands of users managing their book collections
-          </Typography>
-          <Link href="/signup" style={{ textDecoration: 'none' }}>
-            <Button
-              variant="contained"
-              size="large"
-              endIcon={<ArrowForward />}
-              sx={{
-                bgcolor: 'white',
-                color: 'primary.main',
-                '&:hover': { bgcolor: 'grey.100' },
-                px: 4,
-                py: 1.5,
-              }}
-            >
-              Create Your Account
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <Typography variant="h3" component="h2" fontWeight="bold" sx={{ color: 'white', mb: 2 }}>
+                Welcome back, {user?.firstName}!
+              </Typography>
+              <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.9)', mb: 4 }}>
+                Continue managing your book collection and discover new reads
+              </Typography>
+              <Link href="/books" style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  endIcon={<ArrowForward />}
+                  sx={{
+                    bgcolor: 'white',
+                    color: 'primary.main',
+                    '&:hover': { bgcolor: 'grey.100' },
+                    px: 4,
+                    py: 1.5,
+                  }}
+                >
+                  Go to My Books
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Typography variant="h3" component="h2" fontWeight="bold" sx={{ color: 'white', mb: 2 }}>
+                Ready to get started?
+              </Typography>
+              <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.9)', mb: 4 }}>
+                Join thousands of users managing their book collections
+              </Typography>
+              <Link href="/signup" style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  endIcon={<ArrowForward />}
+                  sx={{
+                    bgcolor: 'white',
+                    color: 'primary.main',
+                    '&:hover': { bgcolor: 'grey.100' },
+                    px: 4,
+                    py: 1.5,
+                  }}
+                >
+                  Create Your Account
+                </Button>
+              </Link>
+            </>
+          )}
         </Container>
       </Box>
 

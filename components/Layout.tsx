@@ -15,9 +15,10 @@ import Sidebar from './Sidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
+  onAddBook?: () => void;
 }
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children, onAddBook }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -33,7 +34,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar */}
-      <Sidebar open={sidebarOpen} onClose={handleSidebarClose} />
+      <Sidebar open={sidebarOpen} onClose={handleSidebarClose} onAddBook={onAddBook} />
 
       {/* Main Content */}
       <Box

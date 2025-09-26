@@ -2,7 +2,7 @@ import api from './api';
 import { Book, BooksResponse, CreateBookData, UpdateBookData, BookFilters } from '@/types/books';
 
 export const booksAPI = {
-  // Get all books with pagination and filters
+  // Get all books (public endpoint)
   getBooks: async (filters: BookFilters = {}): Promise<BooksResponse> => {
     const params = new URLSearchParams();
     
@@ -11,10 +11,22 @@ export const booksAPI = {
     if (filters.isbn) params.append('isbn', filters.isbn);
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
-    if (filters.createdBy) params.append('createdBy', filters.createdBy.toString());
-    if (filters.excludeCreatedBy) params.append('excludeCreatedBy', filters.excludeCreatedBy.toString());
 
     const response = await api.get(`/books?${params.toString()}`);
+    return response.data;
+  },
+
+  // Get only logged-in user's books (private endpoint)
+  getMyBooks: async (filters: BookFilters = {}): Promise<BooksResponse> => {
+    const params = new URLSearchParams();
+    
+    if (filters.title) params.append('title', filters.title);
+    if (filters.author) params.append('author', filters.author);
+    if (filters.isbn) params.append('isbn', filters.isbn);
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+
+    const response = await api.get(`/books/my-books?${params.toString()}`);
     return response.data;
   },
 
@@ -32,7 +44,7 @@ export const booksAPI = {
 
   // Update book
   updateBook: async (id: number, bookData: UpdateBookData): Promise<Book> => {
-    const response = await api.put(`/books/${id}`, bookData);
+    const response = await api.patch(`/books/${id}`, bookData);
     return response.data;
   },
 

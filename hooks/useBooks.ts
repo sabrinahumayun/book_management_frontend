@@ -7,15 +7,26 @@ export const booksKeys = {
   all: ['books'] as const,
   lists: () => [...booksKeys.all, 'list'] as const,
   list: (filters: BookFilters) => [...booksKeys.lists(), filters] as const,
+  myBooks: () => [...booksKeys.all, 'my-books'] as const,
+  myBooksList: (filters: BookFilters) => [...booksKeys.myBooks(), filters] as const,
   details: () => [...booksKeys.all, 'detail'] as const,
   detail: (id: number) => [...booksKeys.details(), id] as const,
 };
 
-// Hook for getting books with filters
+// Hook for getting all books (public)
 export function useBooks(filters: BookFilters = {}) {
   return useQuery({
     queryKey: booksKeys.list(filters),
     queryFn: () => booksAPI.getBooks(filters),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+// Hook for getting user's own books
+export function useMyBooks(filters: BookFilters = {}) {
+  return useQuery({
+    queryKey: booksKeys.myBooksList(filters),
+    queryFn: () => booksAPI.getMyBooks(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
@@ -37,8 +48,9 @@ export function useCreateBook() {
   return useMutation({
     mutationFn: (bookData: CreateBookData) => booksAPI.createBook(bookData),
     onSuccess: () => {
-      // Invalidate and refetch books list
+      // Invalidate and refetch both books lists
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: booksKeys.myBooks() });
     },
   });
 }
@@ -53,8 +65,9 @@ export function useUpdateBook() {
     onSuccess: (updatedBook) => {
       // Update the specific book in cache
       queryClient.setQueryData(booksKeys.detail(updatedBook.id), updatedBook);
-      // Invalidate and refetch books list
+      // Invalidate and refetch both books lists
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: booksKeys.myBooks() });
     },
   });
 }
@@ -68,8 +81,9 @@ export function useDeleteBook() {
     onSuccess: (_, deletedId) => {
       // Remove the book from cache
       queryClient.removeQueries({ queryKey: booksKeys.detail(deletedId) });
-      // Invalidate and refetch books list
+      // Invalidate and refetch both books lists
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: booksKeys.myBooks() });
     },
   });
 }

@@ -42,8 +42,11 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ClearIcon from '@mui/icons-material/Clear';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
-import { useBooks, useDeleteBook } from '@/hooks/useBooks';
-import { BookFilters } from '@/types/books';
+import AddBookModal from '@/components/AddBookModal';
+import EditBookModal from '@/components/EditBookModal';
+import DeleteBookDialog from '@/components/DeleteBookDialog';
+import { useBooks, useMyBooks } from '@/hooks/useBooks';
+import { BookFilters, Book } from '@/types/books';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -78,20 +81,16 @@ export default function BooksPage() {
     limit: 12,
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [addBookModalOpen, setAddBookModalOpen] = useState(false);
+  const [editBookModalOpen, setEditBookModalOpen] = useState(false);
+  const [deleteBookDialogOpen, setDeleteBookDialogOpen] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   // Get user's own books
-  const { data: myBooksResponse, isLoading: myBooksLoading, error: myBooksError } = useBooks({
-    ...filters,
-    createdBy: user?.id,
-  });
+  const { data: myBooksResponse, isLoading: myBooksLoading, error: myBooksError } = useMyBooks(filters);
 
-  // Get all other books
-  const { data: otherBooksResponse, isLoading: otherBooksLoading, error: otherBooksError } = useBooks({
-    ...filters,
-    excludeCreatedBy: user?.id,
-  });
-
-  const deleteBookMutation = useDeleteBook();
+  // Get all books (including user's own books)
+  const { data: allBooksResponse, isLoading: allBooksLoading, error: allBooksError } = useBooks(filters);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -129,24 +128,27 @@ export default function BooksPage() {
     router.push(`/books/${bookId}`);
   };
 
-  const handleEditBook = (bookId: number) => {
-    router.push(`/books/${bookId}/edit`);
+  const handleEditBook = (book: Book) => {
+    setSelectedBook(book);
+    setEditBookModalOpen(true);
   };
 
-  const handleDeleteBook = (bookId: number) => {
-    if (window.confirm('Are you sure you want to delete this book?')) {
-      deleteBookMutation.mutate(bookId);
-    }
+  const handleDeleteBook = (book: Book) => {
+    setSelectedBook(book);
+    setDeleteBookDialogOpen(true);
   };
 
   const handleAddBook = () => {
-    router.push('/add-book');
+    setAddBookModalOpen(true);
   };
 
   const myBooks = myBooksResponse?.data || [];
-  const otherBooks = otherBooksResponse?.data || [];
+  const allBooks = allBooksResponse?.data || [];
   const myBooksTotalPages = myBooksResponse?.totalPages || 0;
-  const otherBooksTotalPages = otherBooksResponse?.totalPages || 0;
+  const allBooksTotalPages = allBooksResponse?.totalPages || 0;
+  
+  // Filter out user's own books from all books for the "Browse Books" tab
+  const otherBooks = allBooks.filter(book => book.createdBy !== user?.id);
 
   const renderBookCard = (book: any, isMyBook: boolean = false) => (
     <Card
@@ -155,147 +157,234 @@ export default function BooksPage() {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 3,
+        position: 'relative',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        borderRadius: 4,
         overflow: 'hidden',
         background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
         boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+        border: '1px solid rgba(255,255,255,0.2)',
+        backdropFilter: 'blur(10px)',
         '&:hover': {
-          transform: 'translateY(-8px)',
-          boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
-          borderColor: 'primary.main',
+          transform: 'translateY(-12px) scale(1.02)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
           '& .book-cover': {
-            transform: 'scale(1.05)',
+            transform: 'scale(1.1) rotate(5deg)',
           },
+          '& .book-title': {
+            color: 'primary.main',
+          },
+          '& .book-actions': {
+            opacity: 1,
+            transform: 'translateY(0)',
+          }
         },
       }}
     >
-      <CardContent sx={{ flexGrow: 1, p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 3 }}>
-          <Avatar 
-            className="book-cover"
-            sx={{ 
-              bgcolor: 'primary.main', 
-              mr: 2, 
-              width: 56, 
-              height: 56,
-              transition: 'transform 0.3s ease',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
-            }}
-          >
-            <LibraryBooks sx={{ fontSize: 28 }} />
-          </Avatar>
-          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Typography 
-              variant="h6" 
-              component="h3" 
-              fontWeight="700" 
-              sx={{ 
-                mb: 0.5,
-                background: 'linear-gradient(135deg, #2d3748 0%, #4a5568 100%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              {book.title}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-              by {book.author}
+      {/* Book Cover Section */}
+      <Box
+        sx={{
+          position: 'relative',
+          height: 200,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+        }}
+      >
+        <Box
+          className="book-cover"
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+            transition: 'all 0.4s ease',
+          }}
+        />
+        <LibraryBooks 
+          sx={{ 
+            fontSize: 64, 
+            color: 'white',
+            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
+            transition: 'all 0.4s ease',
+          }} 
+        />
+        
+        {/* Floating Action Buttons */}
+        <Box 
+          className="book-actions"
+          sx={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            display: 'flex',
+            gap: 1,
+            opacity: 0,
+            transform: 'translateY(-10px)',
+            transition: 'all 0.3s ease',
+          }}
+        >
+          {isMyBook && (
+            <>
+              <Tooltip title="Edit Book">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditBook(book);
+                  }}
+                  sx={{
+                    backgroundColor: 'rgba(255,255,255,0.9)',
+                    color: 'primary.main',
+                    '&:hover': {
+                      backgroundColor: 'white',
+                      transform: 'scale(1.1)',
+                    },
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  <Edit fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete Book">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteBook(book);
+                  }}
+                  sx={{
+                    backgroundColor: 'rgba(255,255,255,0.9)',
+                    color: 'error.main',
+                    '&:hover': {
+                      backgroundColor: 'white',
+                      transform: 'scale(1.1)',
+                    },
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+        </Box>
+      </Box>
+
+      {/* Book Content */}
+      <CardContent sx={{ flexGrow: 1, p: 3, position: 'relative' }}>
+        {/* Book Title */}
+        <Typography 
+          className="book-title"
+          variant="h6" 
+          component="h3" 
+          fontWeight="700" 
+          sx={{ 
+            mb: 1,
+            color: 'text.primary',
+            lineHeight: 1.3,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            transition: 'color 0.3s ease',
+          }}
+        >
+          {book.title}
+        </Typography>
+        
+        {/* Author */}
+        <Typography 
+          variant="body2" 
+          color="text.secondary" 
+          sx={{ 
+            fontWeight: 500,
+            mb: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+          }}
+        >
+          <Person sx={{ fontSize: 16 }} />
+          by {book.author}
+        </Typography>
+        
+        {/* ISBN Chip */}
+        <Chip
+          label={`ISBN: ${book.isbn}`}
+          size="small"
+          variant="outlined"
+          sx={{ 
+            mb: 2,
+            backgroundColor: 'rgba(102, 126, 234, 0.08)',
+            borderColor: 'primary.main',
+            color: 'primary.main',
+            fontWeight: 600,
+            fontSize: '0.75rem',
+            height: 24,
+          }}
+        />
+        
+        {/* Creator Info */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          mb: 2,
+          p: 1.5,
+          backgroundColor: 'rgba(0,0,0,0.02)',
+          borderRadius: 2,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}>
+              <Person sx={{ fontSize: 14 }} />
+            </Avatar>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+              {book.creator.firstName} {book.creator.lastName}
             </Typography>
           </Box>
-        </Box>
-        
-        <Box sx={{ mb: 2 }}>
-          <Chip
-            label={`ISBN: ${book.isbn}`}
-            size="small"
-            variant="outlined"
-            sx={{ 
-              mb: 1,
-              backgroundColor: 'rgba(102, 126, 234, 0.1)',
-              borderColor: 'primary.main',
-              color: 'primary.main',
-              fontWeight: 500
-            }}
-          />
-        </Box>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <Person sx={{ mr: 1, color: 'text.secondary', fontSize: 16 }} />
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-            Added by {book.creator.firstName} {book.creator.lastName}
+            {new Date(book.createdAt).toLocaleDateString()}
           </Typography>
         </Box>
-        
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-          {new Date(book.createdAt).toLocaleDateString()}
-        </Typography>
       </CardContent>
       
-      <Box sx={{ p: 3, pt: 0, display: 'flex', gap: 1, alignItems: 'center' }}>
+      {/* Action Button */}
+      <Box sx={{ p: 3, pt: 0 }}>
         <Button
           variant="contained"
           fullWidth
           onClick={() => handleViewBook(book.id)}
           startIcon={<LibraryBooks />}
-          size="small"
           sx={{
-            borderRadius: 2,
+            borderRadius: 3,
+            py: 1.5,
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            boxShadow: '0 2px 10px rgba(102, 126, 234, 0.3)',
+            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+            fontWeight: 600,
+            textTransform: 'none',
+            fontSize: '0.95rem',
             '&:hover': {
               background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-            }
+              boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+              transform: 'translateY(-2px)',
+            },
+            transition: 'all 0.3s ease'
           }}
         >
           View Details
         </Button>
-        {isMyBook && (
-          <>
-            <Tooltip title="Edit Book">
-              <IconButton
-                size="small"
-                onClick={() => handleEditBook(book.id)}
-                color="primary"
-                sx={{
-                  backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
-                  }
-                }}
-              >
-                <Edit />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete Book">
-              <IconButton
-                size="small"
-                onClick={() => handleDeleteBook(book.id)}
-                color="error"
-                sx={{
-                  backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(244, 67, 54, 0.2)',
-                  }
-                }}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
-          </>
-        )}
       </Box>
     </Card>
   );
 
   return (
     <ProtectedRoute>
-      <Layout>
+      <Layout onAddBook={handleAddBook}>
         <Box sx={{ flexGrow: 1, bgcolor: '#f8fafc', minHeight: '100vh' }}>
           <Container maxWidth="xl" sx={{ py: 4 }}>
             {/* Header */}
@@ -403,74 +492,131 @@ export default function BooksPage() {
               </Tabs>
             </Paper>
 
-            {/* Filters */}
+            {/* Enhanced Search & Filters */}
             <Card 
               sx={{ 
                 mb: 4,
-                borderRadius: 3,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                border: '1px solid',
-                borderColor: 'divider'
+                borderRadius: 4,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                border: 'none',
+                background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                overflow: 'hidden'
               }}
             >
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <TextField
-                    placeholder="Search by title, author, or ISBN..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon color="action" />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{ 
-                      minWidth: 300,
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        backgroundColor: 'background.paper',
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="contained"
-                    onClick={handleSearch}
-                    startIcon={<SearchIcon />}
-                    sx={{
-                      borderRadius: 2,
-                      px: 3,
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                      }
-                    }}
-                  >
-                    Search
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={handleClearFilters}
-                    startIcon={<ClearIcon />}
-                    sx={{ borderRadius: 2, px: 3 }}
-                  >
-                    Clear
-                  </Button>
-                  <FormControl sx={{ minWidth: 140 }}>
-                    <InputLabel>Per Page</InputLabel>
-                    <Select
-                      value={filters.limit || 12}
-                      label="Per Page"
-                      onChange={(e) => setFilters(prev => ({ ...prev, limit: e.target.value as number, page: 1 }))}
-                      sx={{ borderRadius: 2 }}
+              <CardContent sx={{ p: 4 }}>
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h6" fontWeight="600" color="text.primary" gutterBottom>
+                    🔍 Search & Filter Books
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Find your next great read with our powerful search tools
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                  <Box sx={{ flex: '1 1 400px', minWidth: '300px' }}>
+                    <TextField
+                      fullWidth
+                      placeholder="Search by title, author, or ISBN..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon sx={{ color: 'primary.main' }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: searchTerm && (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              onClick={() => setSearchTerm('')}
+                              sx={{ color: 'text.secondary' }}
+                            >
+                              <ClearIcon fontSize="small" />
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                      sx={{ 
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 3,
+                          backgroundColor: 'white',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                          '&:hover': {
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          },
+                          '&.Mui-focused': {
+                            boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
+                          }
+                        }
+                      }}
+                    />
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                    <Button
+                      variant="contained"
+                      onClick={handleSearch}
+                      startIcon={<SearchIcon />}
+                      sx={{
+                        borderRadius: 3,
+                        px: 4,
+                        py: 1.5,
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                          boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                          transform: 'translateY(-2px)',
+                        },
+                        transition: 'all 0.3s ease'
+                      }}
                     >
-                      <MenuItem value={6}>6 per page</MenuItem>
-                      <MenuItem value={12}>12 per page</MenuItem>
-                      <MenuItem value={24}>24 per page</MenuItem>
-                      <MenuItem value={48}>48 per page</MenuItem>
-                    </Select>
-                  </FormControl>
+                      Search
+                    </Button>
+                    
+                    <Button
+                      variant="outlined"
+                      onClick={handleClearFilters}
+                      startIcon={<ClearIcon />}
+                      sx={{ 
+                        borderRadius: 3, 
+                        px: 4, 
+                        py: 1.5,
+                        borderColor: 'primary.main',
+                        color: 'primary.main',
+                        '&:hover': {
+                          borderColor: 'primary.dark',
+                          backgroundColor: 'rgba(102, 126, 234, 0.08)',
+                          transform: 'translateY(-2px)',
+                        },
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      Clear
+                    </Button>
+                    
+                    <FormControl sx={{ minWidth: 160 }}>
+                      <InputLabel sx={{ color: 'text.secondary' }}>Items per page</InputLabel>
+                      <Select
+                        value={filters.limit || 12}
+                        label="Items per page"
+                        onChange={(e) => setFilters(prev => ({ ...prev, limit: e.target.value as number, page: 1 }))}
+                        sx={{ 
+                          borderRadius: 3,
+                          backgroundColor: 'white',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        }}
+                      >
+                        <MenuItem value={6}>6 per page</MenuItem>
+                        <MenuItem value={12}>12 per page</MenuItem>
+                        <MenuItem value={24}>24 per page</MenuItem>
+                        <MenuItem value={48}>48 per page</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
                 </Box>
               </CardContent>
             </Card>
@@ -492,10 +638,12 @@ export default function BooksPage() {
                     gridTemplateColumns: {
                       xs: '1fr',
                       sm: 'repeat(2, 1fr)',
-                      md: 'repeat(3, 1fr)',
-                      lg: 'repeat(4, 1fr)',
+                      md: 'repeat(2, 1fr)',
+                      lg: 'repeat(3, 1fr)',
+                      xl: 'repeat(4, 1fr)',
                     },
-                    gap: 3 
+                    gap: 4,
+                    px: 1
                   }}>
                     {myBooks.map((book) => renderBookCard(book, true))}
                   </Box>
@@ -562,11 +710,11 @@ export default function BooksPage() {
 
             {/* Browse Books Tab */}
             <TabPanel value={tabValue} index={1}>
-              {otherBooksLoading ? (
+              {allBooksLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
                   <CircularProgress />
                 </Box>
-              ) : otherBooksError ? (
+              ) : allBooksError ? (
                 <Alert severity="error">
                   Failed to load books. Please try again.
                 </Alert>
@@ -577,10 +725,12 @@ export default function BooksPage() {
                     gridTemplateColumns: {
                       xs: '1fr',
                       sm: 'repeat(2, 1fr)',
-                      md: 'repeat(3, 1fr)',
-                      lg: 'repeat(4, 1fr)',
+                      md: 'repeat(2, 1fr)',
+                      lg: 'repeat(3, 1fr)',
+                      xl: 'repeat(4, 1fr)',
                     },
-                    gap: 3 
+                    gap: 4,
+                    px: 1
                   }}>
                     {otherBooks.map((book) => renderBookCard(book, false))}
                   </Box>
@@ -597,10 +747,10 @@ export default function BooksPage() {
                     </Box>
                   )}
                   
-                  {otherBooksTotalPages > 1 && (
+                  {allBooksTotalPages > 1 && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                       <Pagination
-                        count={otherBooksTotalPages}
+                        count={allBooksTotalPages}
                         page={filters.page || 1}
                         onChange={handlePageChange}
                         color="primary"
@@ -612,6 +762,32 @@ export default function BooksPage() {
             </TabPanel>
           </Container>
         </Box>
+        
+        {/* Add Book Modal */}
+        <AddBookModal 
+          open={addBookModalOpen} 
+          onClose={() => setAddBookModalOpen(false)} 
+        />
+        
+        {/* Edit Book Modal */}
+        <EditBookModal 
+          open={editBookModalOpen} 
+          onClose={() => {
+            setEditBookModalOpen(false);
+            setSelectedBook(null);
+          }}
+          book={selectedBook}
+        />
+        
+        {/* Delete Book Dialog */}
+        <DeleteBookDialog 
+          open={deleteBookDialogOpen} 
+          onClose={() => {
+            setDeleteBookDialogOpen(false);
+            setSelectedBook(null);
+          }}
+          book={selectedBook}
+        />
       </Layout>
     </ProtectedRoute>
   );

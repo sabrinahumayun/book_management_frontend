@@ -40,6 +40,4 @@ export interface BookFilters {
   isbn?: string;
   page?: number;
   limit?: number;
-  createdBy?: number;
-  excludeCreatedBy?: number;
 }
