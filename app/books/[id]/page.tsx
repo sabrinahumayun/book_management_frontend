@@ -82,6 +82,36 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     ? feedbacks.reduce((sum, feedback) => sum + feedback.rating, 0) / feedbacks.length 
     : 0;
 
+  // Check if current user has already reviewed this book
+  const userReview = feedbacks.find(feedback => {
+    // Debug logging
+    console.log('Checking feedback:', {
+      feedbackUserId: feedback.userId,
+      feedbackUserIdType: typeof feedback.userId,
+      currentUserId: user?.id,
+      currentUserIdType: typeof user?.id,
+      isMatch: feedback.userId === user?.id,
+      isMatchStrict: feedback.userId === Number(user?.id),
+      isMatchLoose: feedback.userId == user?.id,
+      feedbackUser: feedback.user,
+      currentUser: user
+    });
+    // Try multiple comparison methods
+    return feedback.userId === user?.id || 
+           feedback.userId === Number(user?.id) ||
+           (feedback.user && user && feedback.user.email === user.email);
+  });
+  const hasUserReviewed = !!userReview;
+  
+  // Debug logging
+  console.log('User review check:', {
+    userReview,
+    hasUserReviewed,
+    feedbacksCount: feedbacks.length,
+    currentUser: user?.id,
+    allFeedbacks: feedbacks.map(f => ({ id: f.id, userId: f.userId, userEmail: f.user?.email }))
+  });
+
   if (bookLoading) {
     return (
       <ProtectedRoute>
@@ -189,14 +219,47 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                   </Box>
                   
                   {user?.id !== book.createdBy && (
-                    <Button
-                      variant="contained"
-                      startIcon={<RateReview />}
-                      onClick={handleOpenAddFeedback}
-                      size="large"
-                    >
-                      Leave Feedback
-                    </Button>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {hasUserReviewed && (
+                        <Box sx={{ 
+                          p: 2, 
+                          backgroundColor: 'rgba(245, 158, 11, 0.1)', 
+                          borderRadius: 2,
+                          border: '1px solid rgba(245, 158, 11, 0.3)'
+                        }}>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Your Review:
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <Rating value={userReview.rating} readOnly size="small" />
+                            <Typography variant="body2" fontWeight="600">
+                              {userReview.rating}/5
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" color="text.primary" sx={{ fontStyle: 'italic' }}>
+                            "{userReview.comment}"
+                          </Typography>
+                        </Box>
+                      )}
+                      <Button
+                        variant="contained"
+                        startIcon={hasUserReviewed ? <Edit /> : <RateReview />}
+                        onClick={hasUserReviewed ? () => handleEditFeedback(userReview) : handleOpenAddFeedback}
+                        size="large"
+                        sx={{
+                          background: hasUserReviewed 
+                            ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          '&:hover': {
+                            background: hasUserReviewed
+                              ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)'
+                              : 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                          }
+                        }}
+                      >
+                        {hasUserReviewed ? 'Update Review' : 'Leave Feedback'}
+                      </Button>
+                    </Box>
                   )}
                   {user?.id === book.createdBy && (
                     <Button

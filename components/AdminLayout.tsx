@@ -22,6 +22,12 @@ import {
   useMediaQuery,
   Button,
   Tooltip,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Dashboard,
@@ -29,13 +35,16 @@ import {
   People,
   RateReview,
   ArrowBack,
-  Menu,
+  Menu as MenuIcon,
   Settings,
   Shield,
   TrendingUp,
   Warning,
   Add,
+  Person,
+  Apps as Update,
 } from '@mui/icons-material';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useAuth } from '@/hooks/useAuth';
 import { useBooks } from '@/hooks/useBooks';
 import { useUsers } from '@/hooks/useUsers';
@@ -57,6 +66,8 @@ export default function AdminLayout({ children, onAddBook }: AdminLayoutProps) {
   const { user, logout } = useAuth();
   
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
+  const [userInfoModalOpen, setUserInfoModalOpen] = useState(false);
 
   // Fetch data for sidebar stats
   const { data: booksResponse } = useBooks({ page: 1, limit: 50 });
@@ -82,6 +93,31 @@ export default function AdminLayout({ children, onAddBook }: AdminLayoutProps) {
     logout();
   };
 
+  const handleUserMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setUserMenuAnchor(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setUserMenuAnchor(null);
+  };
+
+  const handleUserInfoClick = () => {
+    setUserInfoModalOpen(true);
+    handleUserMenuClose();
+  };
+
+  const handleUserInfoModalClose = () => {
+    setUserInfoModalOpen(false);
+  };
+
+  const handleOpenBooksInNewTab = () => {
+    window.open('/books', '_blank');
+  };
+
+  const handleOpenAppInNewTab = () => {
+    window.open('/books', '_blank');
+  };
+
   const navigationItems = [
     {
       text: 'Dashboard',
@@ -93,44 +129,30 @@ export default function AdminLayout({ children, onAddBook }: AdminLayoutProps) {
       text: 'Books',
       icon: <LibraryBooks />,
       path: '/admin/books',
-      badge: totalBooks > 0 ? totalBooks : null,
+      badge: null,
     },
     {
       text: 'Users',
       icon: <People />,
       path: '/admin/users',
-      badge: totalUsers > 0 ? totalUsers : null,
+      badge: null,
     },
     {
       text: 'Feedback',
       icon: <RateReview />,
       path: '/admin/feedback',
-      badge: totalFeedback > 0 ? totalFeedback : null,
+      badge: null,
+    },
+    {
+      text: 'Normal Portal',
+      icon: <Update />,
+      path: null, // No path since it opens in new tab
+      badge: null,
+      isAppOption: true,
+      showNewTabIcon: true,
     },
   ];
 
-  const quickActions = [
-    {
-      text: 'Add Book',
-      icon: <Add />,
-      action: () => onAddBook?.(),
-    },
-    {
-      text: 'User Stats',
-      icon: <TrendingUp />,
-      action: () => handleNavigation('/admin/users'),
-    },
-    {
-      text: 'Reviews',
-      icon: <RateReview />,
-      action: () => handleNavigation('/admin/feedback'),
-    },
-    {
-      text: 'Settings',
-      icon: <Settings />,
-      action: () => handleNavigation('/admin/settings'),
-    },
-  ];
 
   const sidebar = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -154,32 +176,6 @@ export default function AdminLayout({ children, onAddBook }: AdminLayoutProps) {
         </Typography>
       </Box>
 
-      {/* User Profile Section */}
-      <Box sx={{ 
-        p: 2, 
-        background: 'rgba(102, 126, 234, 0.1)',
-        borderBottom: '1px solid rgba(102, 126, 234, 0.2)'
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-            {user?.firstName?.[0]}{user?.lastName?.[0]}
-          </Avatar>
-          <Box>
-            <Typography variant="subtitle1" fontWeight="600">
-              {user?.firstName} {user?.lastName}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {user?.email}
-            </Typography>
-          </Box>
-        </Box>
-        <Chip 
-          label="★ Administrator" 
-          color="primary" 
-          size="small"
-          sx={{ fontWeight: 600 }}
-        />
-      </Box>
 
       {/* Stats Section */}
       <Box sx={{ p: 2 }}>
@@ -213,7 +209,7 @@ export default function AdminLayout({ children, onAddBook }: AdminLayoutProps) {
           {navigationItems.map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
-                onClick={() => handleNavigation(item.path)}
+                onClick={() => item.isAppOption ? handleOpenAppInNewTab() : handleNavigation(item.path!)}
                 selected={pathname === item.path}
                 sx={{
                   mx: 1,
@@ -246,54 +242,19 @@ export default function AdminLayout({ children, onAddBook }: AdminLayoutProps) {
                     fontSize: '0.95rem'
                   }}
                 />
+                {item.showNewTabIcon && (
+                  <OpenInNewIcon 
+                    fontSize="small" 
+                    sx={{ 
+                      color: 'inherit',
+                      opacity: 0.7,
+                    }}
+                  />
+                )}
               </ListItemButton>
             </ListItem>
           ))}
         </List>
-      </Box>
-
-      <Divider />
-
-      {/* Quick Actions */}
-      <Box sx={{ p: 2 }}>
-        <Typography variant="subtitle2" fontWeight="600" color="text.primary" gutterBottom>
-          QUICK ACTIONS
-        </Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-          {quickActions.map((action, index) => (
-            <Tooltip key={index} title={action.text}>
-              <IconButton
-                onClick={action.action}
-                sx={{
-                  bgcolor: 'rgba(102, 126, 234, 0.1)',
-                  color: 'primary.main',
-                  '&:hover': {
-                    bgcolor: 'rgba(102, 126, 234, 0.2)',
-                  },
-                }}
-              >
-                {action.icon}
-              </IconButton>
-            </Tooltip>
-          ))}
-        </Box>
-        
-        {onAddBook && (
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={onAddBook}
-            fullWidth
-            sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-              },
-            }}
-          >
-            Add New Book
-          </Button>
-        )}
       </Box>
 
       <Divider />
@@ -344,12 +305,30 @@ export default function AdminLayout({ children, onAddBook }: AdminLayoutProps) {
             edge="start"
             sx={{ mr: 2 }}
           >
-            <Menu />
+            <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Admin Portal
           </Typography>
-          <DarkModeToggle />
+          
+          {/* User Info Section */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <DarkModeToggle />
+            <Tooltip title="User Information">
+              <IconButton
+                onClick={handleUserMenuOpen}
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  },
+                }}
+              >
+                <Person />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Toolbar>
       </AppBar>
 
@@ -391,6 +370,57 @@ export default function AdminLayout({ children, onAddBook }: AdminLayoutProps) {
           {children}
         </Box>
       </Box>
+
+      {/* User Menu */}
+      <Menu
+        anchorEl={userMenuAnchor}
+        open={Boolean(userMenuAnchor)}
+        onClose={handleUserMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        PaperProps={{
+          sx: {
+            minWidth: 200,
+            mt: 1,
+          }
+        }}
+      >
+        {/* User Info Section */}
+        <Box sx={{ p: 2, borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+            <Avatar sx={{ bgcolor: 'primary.main', mr: 2, width: 32, height: 32 }}>
+              {user?.firstName?.[0]}{user?.lastName?.[0]}
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle2" fontWeight="600">
+                {user?.firstName} {user?.lastName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {user?.email}
+              </Typography>
+            </Box>
+          </Box>
+          <Chip 
+            label="Administrator" 
+            color="primary" 
+            size="small"
+            sx={{ fontWeight: 600 }}
+          />
+        </Box>
+        
+        {/* Menu Items */}
+        <MenuItem onClick={handleLogout}>
+          <ArrowBack sx={{ mr: 1 }} />
+          Logout
+        </MenuItem>
+      </Menu>
+
     </Box>
   );
 }

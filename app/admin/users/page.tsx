@@ -39,7 +39,7 @@ import {
   LibraryBooks as SearchIcon,
   ArrowBack as ClearIcon,
   Edit,
-  Warning as DeleteIcon,
+  Delete as DeleteIcon,
   Person as Add,
   Settings as FilterIcon,
   ArrowBack as RefreshIcon,

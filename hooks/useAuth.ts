@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { authAPI } from '@/lib/api';
 import { LoginCredentials, RegisterData, User, AuthResponse } from '@/types/auth';
+import { setAuthToken, getAuthToken, removeAuthToken, setUser, getUser, removeUser } from '@/lib/authStorage';
 
 // Query keys
 export const authKeys = {
@@ -88,6 +89,7 @@ export function useAuth() {
     onSuccess: (response: AuthResponse) => {
       localStorage.setItem('authToken', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
+      setAuthToken(response.access_token);
       setUser(response.user);
       queryClient.setQueryData(authKeys.profile(), response.user);
       

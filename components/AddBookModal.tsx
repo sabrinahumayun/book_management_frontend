@@ -9,14 +9,12 @@ import {
   TextField,
   Button,
   Box,
-  Alert,
   CircularProgress,
-  Snackbar,
-  AlertTitle,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { useCreateBook } from '@/hooks/useBooks';
 import { CreateBookData } from '@/types/books';
+import { toast } from 'react-toastify';
 
 interface AddBookModalProps {
   open: boolean;
@@ -31,7 +29,6 @@ interface BookFormData {
 
 export default function AddBookModal({ open, onClose }: AddBookModalProps) {
   const createBookMutation = useCreateBook();
-  const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
 
   const {
     control,
@@ -48,18 +45,19 @@ export default function AddBookModal({ open, onClose }: AddBookModalProps) {
 
   const handleClose = () => {
     reset();
-    setShowSuccessMessage(false);
+    createBookMutation.reset();
     onClose();
   };
 
   const onSubmit = (data: BookFormData) => {
     createBookMutation.mutate(data as CreateBookData, {
       onSuccess: () => {
-        setShowSuccessMessage(true);
-        setTimeout(() => {
-          handleClose();
-          setShowSuccessMessage(false);
-        }, 1500); // Show success message for 1.5 seconds before closing
+        toast.success('Book created successfully! 🎉');
+        handleClose();
+      },
+      onError: (error: any) => {
+        const errorMessage = getErrorMessage(error);
+        toast.error(errorMessage);
       },
     });
   };
@@ -72,10 +70,8 @@ export default function AddBookModal({ open, onClose }: AddBookModalProps) {
   };
 
   // Helper function to get error message
-  const getErrorMessage = () => {
-    if (!createBookMutation.error) return null;
-    
-    const error = createBookMutation.error as any;
+  const getErrorMessage = (error: any) => {
+    if (!error) return 'An unexpected error occurred';
     
     // Handle validation errors from backend
     if (error?.response?.status === 400) {
@@ -152,54 +148,6 @@ export default function AddBookModal({ open, onClose }: AddBookModalProps) {
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent sx={{ p: 4 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {createBookMutation.error && (
-              <Alert 
-                severity="error"
-                sx={{
-                  borderRadius: 2,
-                  '& .MuiAlert-message': {
-                    fontSize: '0.875rem',
-                    lineHeight: 1.4,
-                  }
-                }}
-                action={
-                  <Button
-                    color="inherit"
-                    size="small"
-                    onClick={() => createBookMutation.reset()}
-                    sx={{ 
-                      textTransform: 'none',
-                      fontWeight: 500,
-                      '&:hover': {
-                        backgroundColor: 'rgba(255,255,255,0.1)',
-                      }
-                    }}
-                  >
-                    Dismiss
-                  </Button>
-                }
-              >
-                <AlertTitle sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                  Error Creating Book
-                </AlertTitle>
-                {getErrorMessage()}
-              </Alert>
-            )}
-            
-            {showSuccessMessage && (
-              <Alert 
-                severity="success"
-                sx={{
-                  borderRadius: 2,
-                  '& .MuiAlert-message': {
-                    fontSize: '0.875rem',
-                    lineHeight: 1.4,
-                  }
-                }}
-              >
-                Book created successfully! 🎉
-              </Alert>
-            )}
             
             <Controller
               name="title"

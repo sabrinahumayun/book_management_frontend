@@ -8,14 +8,13 @@ import {
   DialogActions,
   Button,
   Box,
-  Alert,
   CircularProgress,
-  AlertTitle,
   Typography,
   Rating,
 } from '@mui/material';
 import { useDeleteFeedback } from '@/hooks/useFeedback';
 import { Feedback } from '@/types/feedback';
+import { toast } from 'react-toastify';
 
 interface DeleteReviewDialogProps {
   open: boolean;
@@ -25,10 +24,9 @@ interface DeleteReviewDialogProps {
 
 export default function DeleteReviewDialog({ open, onClose, feedback }: DeleteReviewDialogProps) {
   const deleteFeedbackMutation = useDeleteFeedback();
-  const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
 
   const handleClose = () => {
-    setShowSuccessMessage(false);
+    deleteFeedbackMutation.reset();
     onClose();
   };
 
@@ -37,20 +35,19 @@ export default function DeleteReviewDialog({ open, onClose, feedback }: DeleteRe
     
     deleteFeedbackMutation.mutate(feedback.id, {
       onSuccess: () => {
-        setShowSuccessMessage(true);
-        setTimeout(() => {
-          handleClose();
-          setShowSuccessMessage(false);
-        }, 1500); // Show success message for 1.5 seconds before closing
+        toast.success('Review deleted successfully! 🗑️');
+        handleClose();
+      },
+      onError: (error: any) => {
+        const errorMessage = getErrorMessage(error);
+        toast.error(errorMessage || 'Failed to delete review. Please try again.');
       },
     });
   };
 
   // Helper function to get error message
-  const getErrorMessage = () => {
-    if (!deleteFeedbackMutation.error) return null;
-    
-    const error = deleteFeedbackMutation.error as any;
+  const getErrorMessage = (error: any) => {
+    if (!error) return null;
     
     // Handle authentication errors
     if (error?.response?.status === 401) {
@@ -67,6 +64,11 @@ export default function DeleteReviewDialog({ open, onClose, feedback }: DeleteRe
       return 'Review not found. It may have already been deleted.';
     }
     
+    // Handle rate limit errors (429)
+    if (error?.response?.status === 429) {
+      return error?.response?.data?.message || 'Too many requests. Please wait a moment before deleting again.';
+    }
+    
     // Handle server errors
     if (error?.response?.status >= 500) {
       return 'Server error occurred. Please try again later.';
@@ -75,6 +77,11 @@ export default function DeleteReviewDialog({ open, onClose, feedback }: DeleteRe
     // Handle network errors
     if (error?.code === 'NETWORK_ERROR' || !error?.response) {
       return 'Network error. Please check your internet connection and try again.';
+    }
+    
+    // Always try to get the actual error message from backend first
+    if (error?.response?.data?.message) {
+      return error.response.data.message;
     }
     
     // Default error message
@@ -110,55 +117,6 @@ export default function DeleteReviewDialog({ open, onClose, feedback }: DeleteRe
       
       <DialogContent sx={{ p: 4 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {deleteFeedbackMutation.error && (
-            <Alert 
-              severity="error"
-              sx={{
-                borderRadius: 2,
-                '& .MuiAlert-message': {
-                  fontSize: '0.875rem',
-                  lineHeight: 1.4,
-                }
-              }}
-              action={
-                <Button
-                  color="inherit"
-                  size="small"
-                  onClick={() => deleteFeedbackMutation.reset()}
-                  sx={{ 
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    '&:hover': {
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                    }
-                  }}
-                >
-                  Dismiss
-                </Button>
-              }
-            >
-              <AlertTitle sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                Error Deleting Review
-              </AlertTitle>
-              {getErrorMessage()}
-            </Alert>
-          )}
-          
-          {showSuccessMessage && (
-            <Alert 
-              severity="success"
-              sx={{
-                borderRadius: 2,
-                '& .MuiAlert-message': {
-                  fontSize: '0.875rem',
-                  lineHeight: 1.4,
-                }
-              }}
-            >
-              Review deleted successfully! 🗑️
-            </Alert>
-          )}
-          
           <Typography variant="body1" color="text.primary" sx={{ mb: 2 }}>
             Are you sure you want to delete this review? This action cannot be undone.
           </Typography>

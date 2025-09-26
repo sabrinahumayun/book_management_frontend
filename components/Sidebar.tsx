@@ -14,12 +14,14 @@ import {
   useTheme,
   useMediaQuery,
   Badge,
+  Tooltip,
 } from '@mui/material';
 import {
   Dashboard,
   LibraryBooks,
   RateReview,
   People,
+  ArrowForward as OpenInNewIcon,
 } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -82,9 +84,9 @@ export default function Sidebar({ open, onClose, onAddBook }: SidebarProps) {
     ...(isAdmin ? [
       { name: 'Admin Dashboard', href: '/admin/dashboard', icon: Dashboard, badge: null },
     ] : [
-      { name: 'Dashboard', href: '/books', icon: Dashboard, badge: myBooksCount },
+      { name: 'Dashboard', href: '/books', icon: Dashboard, badge: myBooksCount, hasNewTabOption: true },
     ]),
-    { name: 'My Reviews', href: '/my-reviews', icon: RateReview, badge: null },
+    { name: 'My Feedback', href: '/my-reviews', icon: RateReview, badge: null },
     ...(isAdmin ? [
       { name: 'All Books', href: '/admin/books', icon: People, badge: totalBooksCount },
       { name: 'Feedback', href: '/admin/feedback', icon: RateReview, badge: null },
@@ -104,6 +106,10 @@ export default function Sidebar({ open, onClose, onAddBook }: SidebarProps) {
     if (isMobile) {
       onClose();
     }
+  };
+
+  const handleOpenBooksInNewTab = () => {
+    window.open('/books', '_blank');
   };
 
 
@@ -200,20 +206,42 @@ export default function Sidebar({ open, onClose, onAddBook }: SidebarProps) {
                   <item.icon />
                 </ListItemIcon>
                 <ListItemText primary={item.name} />
-                {item.badge !== null && (
-                  <Badge 
-                    badgeContent={item.badge} 
-                    color="error"
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        background: 'rgba(255,255,255,0.9)',
-                        color: (theme) => theme.palette.mode === 'dark' ? '#8fa4f3' : '#667eea',
-                        fontWeight: 'bold',
-                        fontSize: '0.75rem',
-                      }
-                    }}
-                  />
-                )}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {item.badge !== null && (
+                    <Badge 
+                      badgeContent={item.badge} 
+                      color="error"
+                      sx={{
+                        '& .MuiBadge-badge': {
+                          background: 'rgba(255,255,255,0.9)',
+                          color: (theme) => theme.palette.mode === 'dark' ? '#8fa4f3' : '#667eea',
+                          fontWeight: 'bold',
+                          fontSize: '0.75rem',
+                        }
+                      }}
+                    />
+                  )}
+                  {item.hasNewTabOption && (
+                    <Tooltip title="Open in new tab">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenBooksInNewTab();
+                        }}
+                        sx={{ 
+                          color: 'rgba(255,255,255,0.7)',
+                          '&:hover': {
+                            color: 'white',
+                            backgroundColor: 'rgba(255,255,255,0.1)',
+                          },
+                        }}
+                      >
+                        <OpenInNewIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
               </ListItemButton>
             </ListItem>
           ))}

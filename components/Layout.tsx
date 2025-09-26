@@ -177,7 +177,7 @@ export default function Layout({ children, onAddBook }: LayoutProps) {
               </MenuItem>
               
               <MenuItem onClick={handleReviewsClick}>
-                <Typography variant="body2">My Reviews</Typography>
+                <Typography variant="body2">My Feedback</Typography>
               </MenuItem>
               
               <Divider />

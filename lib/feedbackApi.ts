@@ -68,7 +68,7 @@ export const feedbackAPI = {
 
   // Update feedback (Requires authentication)
   updateFeedback: async (id: number, feedbackData: UpdateFeedbackData): Promise<Feedback> => {
-    const response = await api.put(`/feedback/${id}`, feedbackData);
+    const response = await api.patch(`/feedback/${id}`, feedbackData);
     return response.data;
   },
 

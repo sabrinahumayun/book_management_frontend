@@ -26,7 +26,7 @@ import {
   Edit,
   ArrowBack,
 } from '@mui/icons-material';
-import { Warning as DeleteIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
@@ -98,7 +98,7 @@ export default function MyReviewsPage() {
           <Box sx={{ minHeight: '100vh', bgcolor: (theme) => theme.palette.background.default }}>
             <Container maxWidth="lg" sx={{ py: 4 }}>
               <Alert severity="error">
-                Failed to load your reviews. Please try again.
+                Failed to load your feedback. Please try again.
               </Alert>
               <Button
                 startIcon={<ArrowBack />}
@@ -138,10 +138,10 @@ export default function MyReviewsPage() {
                       mb: 1
                     }}
                   >
-                    My Reviews
+                    My Feedback
                   </Typography>
                   <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 400 }}>
-                    Manage your book reviews and ratings
+                    Manage your book feedback and ratings
                   </Typography>
                 </Box>
                 <Button
@@ -159,7 +159,7 @@ export default function MyReviewsPage() {
               </Box>
             </Box>
 
-            {/* Reviews List */}
+            {/* Feedback List */}
             {feedbacks.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 8 }}>
                 <Box
@@ -183,10 +183,10 @@ export default function MyReviewsPage() {
                   <RateReview sx={{ fontSize: 48, color: 'white' }} />
                 </Box>
                 <Typography variant="h5" color="text.primary" gutterBottom sx={{ fontWeight: 600 }}>
-                  No reviews yet
+                  No feedback yet
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 400, mx: 'auto' }}>
-                  You haven't reviewed any books yet. Start exploring books and share your thoughts!
+                  You haven't provided feedback on any books yet. Start exploring books and share your thoughts!
                 </Typography>
                 <Button
                   variant="contained"
@@ -218,14 +218,14 @@ export default function MyReviewsPage() {
               </Box>
             ) : (
               <>
-                {/* Reviews Count */}
+                {/* Feedback Count */}
                 <Box sx={{ mb: 4 }}>
                   <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
-                    {feedbackResponse?.total || 0} Review{feedbackResponse?.total !== 1 ? 's' : ''}
+                    {feedbackResponse?.total || 0} Feedback{feedbackResponse?.total !== 1 ? 's' : ''}
                   </Typography>
                 </Box>
 
-                {/* Reviews Grid */}
+                {/* Feedback Grid */}
                 <Box sx={{ 
                   display: 'grid', 
                   gridTemplateColumns: {
@@ -292,13 +292,13 @@ export default function MyReviewsPage() {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                           <CalendarToday sx={{ fontSize: 16, color: 'text.secondary' }} />
                           <Typography variant="caption" color="text.secondary">
-                            Reviewed on {new Date(feedback.createdAt).toLocaleDateString()}
+                            Feedback provided on {new Date(feedback.createdAt).toLocaleDateString()}
                           </Typography>
                         </Box>
 
                         {/* Actions */}
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                          <Tooltip title="Edit Review">
+                          <Tooltip title="Edit Feedback">
                             <IconButton
                               size="small"
                               onClick={() => handleEditFeedback(feedback)}
@@ -312,7 +312,7 @@ export default function MyReviewsPage() {
                               <Edit fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Delete Review">
+                          <Tooltip title="Delete Feedback">
                             <IconButton
                               size="small"
                               onClick={() => handleDeleteFeedback(feedback)}
@@ -357,7 +357,7 @@ export default function MyReviewsPage() {
           feedback={selectedFeedback}
         />
 
-        {/* Delete Review Modal */}
+        {/* Delete Feedback Modal */}
         <DeleteReviewDialog 
           open={deleteModalOpen} 
           onClose={handleCloseDeleteModal}

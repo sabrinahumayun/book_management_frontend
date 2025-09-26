@@ -9,15 +9,14 @@ import {
   TextField,
   Button,
   Box,
-  Alert,
   CircularProgress,
-  AlertTitle,
   Rating,
   Typography,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { useUpdateFeedback } from '@/hooks/useFeedback';
 import { UpdateFeedbackData, Feedback } from '@/types/feedback';
+import { toast } from 'react-toastify';
 
 interface EditFeedbackModalProps {
   open: boolean;
@@ -32,7 +31,6 @@ interface FeedbackFormData {
 
 export default function EditFeedbackModal({ open, onClose, feedback }: EditFeedbackModalProps) {
   const updateFeedbackMutation = useUpdateFeedback();
-  const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
 
   const {
     control,
@@ -58,7 +56,7 @@ export default function EditFeedbackModal({ open, onClose, feedback }: EditFeedb
 
   const handleClose = () => {
     reset();
-    setShowSuccessMessage(false);
+    updateFeedbackMutation.reset();
     onClose();
   };
 
@@ -74,11 +72,12 @@ export default function EditFeedbackModal({ open, onClose, feedback }: EditFeedb
       { id: feedback.id, data: updateData },
       {
         onSuccess: () => {
-          setShowSuccessMessage(true);
-          setTimeout(() => {
-            handleClose();
-            setShowSuccessMessage(false);
-          }, 1500); // Show success message for 1.5 seconds before closing
+          toast.success('Review updated successfully! ✨');
+          handleClose();
+        },
+        onError: (error: any) => {
+          const errorMessage = getErrorMessage(error);
+          toast.error(errorMessage || 'Failed to update review. Please try again.');
         },
       }
     );
@@ -92,10 +91,8 @@ export default function EditFeedbackModal({ open, onClose, feedback }: EditFeedb
   };
 
   // Helper function to get error message
-  const getErrorMessage = () => {
-    if (!updateFeedbackMutation.error) return null;
-    
-    const error = updateFeedbackMutation.error as any;
+  const getErrorMessage = (error: any) => {
+    if (!error) return null;
     
     // Debug: Log the full error structure to help identify the actual message
     console.log('Full error object:', error);
@@ -138,6 +135,11 @@ export default function EditFeedbackModal({ open, onClose, feedback }: EditFeedb
     // Handle not found errors
     if (error?.response?.status === 404) {
       return error?.response?.data?.message || 'Feedback not found. It may have been deleted.';
+    }
+    
+    // Handle rate limit errors (429)
+    if (error?.response?.status === 429) {
+      return error?.response?.data?.message || 'Too many requests. Please wait a moment before updating feedback again.';
     }
     
     // Handle server errors - show actual backend message
@@ -202,55 +204,6 @@ export default function EditFeedbackModal({ open, onClose, feedback }: EditFeedb
               </Typography>
             </Box>
 
-            {updateFeedbackMutation.error && (
-              <Alert 
-                severity="error"
-                sx={{
-                  borderRadius: 2,
-                  '& .MuiAlert-message': {
-                    fontSize: '0.875rem',
-                    lineHeight: 1.4,
-                  }
-                }}
-                action={
-                  <Button
-                    color="inherit"
-                    size="small"
-                    onClick={() => updateFeedbackMutation.reset()}
-                    sx={{ 
-                      textTransform: 'none',
-                      fontWeight: 500,
-                      '&:hover': {
-                        backgroundColor: 'rgba(255,255,255,0.1)',
-                      }
-                    }}
-                  >
-                    Dismiss
-                  </Button>
-                }
-              >
-                <AlertTitle sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                  Error Updating Feedback
-                </AlertTitle>
-                {getErrorMessage()}
-              </Alert>
-            )}
-            
-            {showSuccessMessage && (
-              <Alert 
-                severity="success"
-                sx={{
-                  borderRadius: 2,
-                  '& .MuiAlert-message': {
-                    fontSize: '0.875rem',
-                    lineHeight: 1.4,
-                  }
-                }}
-              >
-                Review updated successfully! ✏️
-              </Alert>
-            )}
-            
             {/* Rating */}
             <Box>
               <Typography variant="subtitle1" fontWeight="600" color="text.primary" gutterBottom>
