@@ -27,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '@/hooks/useAuth';
 import { validateEmail } from '@/lib/utils';
+import DarkModeToggle from '@/components/DarkModeToggle';
 
 interface LoginFormData {
   email: string;
@@ -72,7 +73,9 @@ export default function LoginPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: (theme) => theme.palette.mode === 'dark' 
+          ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
+          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -89,12 +92,18 @@ export default function LoginPage() {
         >
           <Box
             sx={{
-              background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+              background: (theme) => theme.palette.mode === 'dark' 
+                ? 'linear-gradient(135deg, #8fa4f3 0%, #9c7bb8 100%)'
+                : 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
               color: 'white',
               textAlign: 'center',
               py: 4,
+              position: 'relative',
             }}
           >
+            <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+              <DarkModeToggle sx={{ color: 'white' }} />
+            </Box>
             <LibraryBooks sx={{ fontSize: 48, mb: 2 }} />
             <Typography variant="h4" component="h1" fontWeight="bold">
               Welcome Back

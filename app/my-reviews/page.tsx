@@ -90,7 +90,7 @@ export default function MyReviewsPage() {
     return (
       <ProtectedRoute>
         <Layout>
-          <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc' }}>
+          <Box sx={{ minHeight: '100vh', bgcolor: (theme) => theme.palette.background.default }}>
             <Container maxWidth="lg" sx={{ py: 4 }}>
               <Alert severity="error">
                 Failed to load your reviews. Please try again.
@@ -112,7 +112,7 @@ export default function MyReviewsPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <Box sx={{ flexGrow: 1, bgcolor: '#f8fafc', minHeight: '100vh' }}>
+        <Box sx={{ flexGrow: 1, bgcolor: (theme) => theme.palette.background.default, minHeight: '100vh' }}>
           <Container maxWidth="lg" sx={{ py: 4 }}>
             {/* Header */}
             <Box sx={{ mb: 6 }}>
@@ -124,7 +124,9 @@ export default function MyReviewsPage() {
                     fontWeight="800" 
                     gutterBottom
                     sx={{ 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: (theme) => theme.palette.mode === 'dark' 
+                        ? 'linear-gradient(135deg, #8fa4f3 0%, #9c7bb8 100%)'
+                        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       backgroundClip: 'text',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
@@ -160,13 +162,17 @@ export default function MyReviewsPage() {
                     width: 120,
                     height: 120,
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: (theme) => theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(135deg, #8fa4f3 0%, #9c7bb8 100%)'
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     mx: 'auto',
                     mb: 3,
-                    boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                    boxShadow: (theme) => theme.palette.mode === 'dark' 
+                      ? '0 8px 32px rgba(143, 164, 243, 0.4)'
+                      : '0 8px 32px rgba(102, 126, 234, 0.3)',
                   }}
                 >
                   <RateReview sx={{ fontSize: 48, color: 'white' }} />
@@ -186,11 +192,19 @@ export default function MyReviewsPage() {
                     borderRadius: 3,
                     px: 4,
                     py: 1.5,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                    background: (theme) => theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(135deg, #8fa4f3 0%, #9c7bb8 100%)'
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: (theme) => theme.palette.mode === 'dark' 
+                      ? '0 4px 15px rgba(143, 164, 243, 0.4)'
+                      : '0 4px 15px rgba(102, 126, 234, 0.4)',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                      boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                      background: (theme) => theme.palette.mode === 'dark' 
+                        ? 'linear-gradient(135deg, #7c94f1 0%, #8a6bb5 100%)'
+                        : 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                      boxShadow: (theme) => theme.palette.mode === 'dark' 
+                        ? '0 6px 20px rgba(143, 164, 243, 0.6)'
+                        : '0 6px 20px rgba(102, 126, 234, 0.6)',
                     }
                   }}
                 >
@@ -252,7 +266,7 @@ export default function MyReviewsPage() {
                             readOnly
                             sx={{
                               '& .MuiRating-iconFilled': {
-                                color: '#ffc107',
+                                color: (theme) => theme.palette.mode === 'dark' ? '#ffd700' : '#ffc107',
                               },
                             }}
                           />

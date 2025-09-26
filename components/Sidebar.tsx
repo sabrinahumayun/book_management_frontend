@@ -32,6 +32,7 @@ import {
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloseIcon from '@mui/icons-material/Close';
 import { useRouter, usePathname } from 'next/navigation';
+import DarkModeToggle from './DarkModeToggle';
 import { useAuth } from '@/hooks/useAuth';
 import { useBooks, useMyBooks } from '@/hooks/useBooks';
 
@@ -125,7 +126,9 @@ export default function Sidebar({ open, onClose, onAddBook }: SidebarProps) {
       height: '100%', 
       display: 'flex', 
       flexDirection: 'column',
-      background: 'linear-gradient(180deg, #667eea 0%, #764ba2 100%)',
+      background: (theme) => theme.palette.mode === 'dark' 
+        ? 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)'
+        : 'linear-gradient(180deg, #667eea 0%, #764ba2 100%)',
       color: 'white'
     }}>
       {/* Header */}
@@ -155,11 +158,14 @@ export default function Sidebar({ open, onClose, onAddBook }: SidebarProps) {
               Book Portal
             </Typography>
           </Box>
-          {isMobile && (
-            <IconButton onClick={onClose} size="small" sx={{ color: 'white' }}>
-              <CloseIcon />
-            </IconButton>
-          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DarkModeToggle size="small" sx={{ color: 'white' }} />
+            {isMobile && (
+              <IconButton onClick={onClose} size="small" sx={{ color: 'white' }}>
+                <CloseIcon />
+              </IconButton>
+            )}
+          </Box>
         </Box>
       </Box>
 
@@ -309,7 +315,7 @@ export default function Sidebar({ open, onClose, onAddBook }: SidebarProps) {
                     sx={{
                       '& .MuiBadge-badge': {
                         background: 'rgba(255,255,255,0.9)',
-                        color: '#667eea',
+                        color: (theme) => theme.palette.mode === 'dark' ? '#8fa4f3' : '#667eea',
                         fontWeight: 'bold',
                         fontSize: '0.75rem',
                       }
@@ -377,16 +383,24 @@ export default function Sidebar({ open, onClose, onAddBook }: SidebarProps) {
           }}
           sx={{
             borderRadius: 3,
-            background: 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)',
+            background: (theme) => theme.palette.mode === 'dark' 
+              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+              : 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)',
             color: 'white',
             py: 2,
             px: 2,
-            boxShadow: '0 4px 15px rgba(74, 222, 128, 0.4)',
+            boxShadow: (theme) => theme.palette.mode === 'dark' 
+              ? '0 4px 15px rgba(16, 185, 129, 0.4)'
+              : '0 4px 15px rgba(74, 222, 128, 0.4)',
             border: '1px solid rgba(255,255,255,0.2)',
             backdropFilter: 'blur(10px)',
             '&:hover': {
-              background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-              boxShadow: '0 6px 20px rgba(74, 222, 128, 0.6)',
+              background: (theme) => theme.palette.mode === 'dark' 
+                ? 'linear-gradient(135deg, #059669 0%, #047857 100%)'
+                : 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+              boxShadow: (theme) => theme.palette.mode === 'dark' 
+                ? '0 6px 20px rgba(16, 185, 129, 0.6)'
+                : '0 6px 20px rgba(74, 222, 128, 0.6)',
               transform: 'translateY(-2px)',
             },
             transition: 'all 0.3s ease',

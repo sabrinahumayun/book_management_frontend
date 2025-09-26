@@ -188,13 +188,21 @@ export default function BooksPage() {
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         borderRadius: 4,
         overflow: 'hidden',
-        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        border: '1px solid rgba(255,255,255,0.2)',
+        background: (theme) => theme.palette.mode === 'dark' 
+          ? 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)'
+          : 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+        boxShadow: (theme) => theme.palette.mode === 'dark' 
+          ? '0 4px 20px rgba(0,0,0,0.3)'
+          : '0 4px 20px rgba(0,0,0,0.08)',
+        border: (theme) => theme.palette.mode === 'dark' 
+          ? '1px solid rgba(255,255,255,0.1)'
+          : '1px solid rgba(255,255,255,0.2)',
         backdropFilter: 'blur(10px)',
         '&:hover': {
           transform: 'translateY(-12px) scale(1.02)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          boxShadow: (theme) => theme.palette.mode === 'dark' 
+            ? '0 20px 60px rgba(0,0,0,0.5)'
+            : '0 20px 60px rgba(0,0,0,0.2)',
           '& .book-cover': {
             transform: 'scale(1.1) rotate(5deg)',
           },
@@ -412,7 +420,7 @@ export default function BooksPage() {
   return (
     <ProtectedRoute>
       <Layout onAddBook={handleAddBook}>
-        <Box sx={{ flexGrow: 1, bgcolor: '#f8fafc', minHeight: '100vh' }}>
+        <Box sx={{ flexGrow: 1, bgcolor: (theme) => theme.palette.background.default, minHeight: '100vh' }}>
           <Container maxWidth="xl" sx={{ py: 4 }}>
             {/* Header */}
             <Box sx={{ mb: 6 }}>
@@ -424,7 +432,9 @@ export default function BooksPage() {
                     fontWeight="800" 
                     gutterBottom
                     sx={{ 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: (theme) => theme.palette.mode === 'dark' 
+                        ? 'linear-gradient(135deg, #8fa4f3 0%, #9c7bb8 100%)'
+                        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       backgroundClip: 'text',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
@@ -445,11 +455,19 @@ export default function BooksPage() {
                     minWidth: 160,
                     height: 48,
                     borderRadius: 3,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                    background: (theme) => theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(135deg, #8fa4f3 0%, #9c7bb8 100%)'
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: (theme) => theme.palette.mode === 'dark' 
+                      ? '0 4px 15px rgba(143, 164, 243, 0.4)'
+                      : '0 4px 15px rgba(102, 126, 234, 0.4)',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                      boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                      background: (theme) => theme.palette.mode === 'dark' 
+                        ? 'linear-gradient(135deg, #7c94f1 0%, #8a6bb5 100%)'
+                        : 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                      boxShadow: (theme) => theme.palette.mode === 'dark' 
+                        ? '0 6px 20px rgba(143, 164, 243, 0.6)'
+                        : '0 6px 20px rgba(102, 126, 234, 0.6)',
                     }
                   }}
                 >
@@ -463,7 +481,9 @@ export default function BooksPage() {
               sx={{ 
                 mb: 4,
                 borderRadius: 3,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                boxShadow: (theme) => theme.palette.mode === 'dark' 
+                  ? '0 4px 20px rgba(0,0,0,0.3)'
+                  : '0 4px 20px rgba(0,0,0,0.08)',
                 overflow: 'hidden'
               }}
             >
@@ -524,9 +544,13 @@ export default function BooksPage() {
               sx={{ 
                 mb: 4,
                 borderRadius: 4,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                boxShadow: (theme) => theme.palette.mode === 'dark' 
+                  ? '0 8px 32px rgba(0,0,0,0.3)'
+                  : '0 8px 32px rgba(0,0,0,0.12)',
                 border: 'none',
-                background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                background: (theme) => theme.palette.mode === 'dark' 
+                  ? 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)'
+                  : 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
                 overflow: 'hidden'
               }}
             >
@@ -571,13 +595,19 @@ export default function BooksPage() {
                       sx={{ 
                         '& .MuiOutlinedInput-root': {
                           borderRadius: 3,
-                          backgroundColor: 'white',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                          backgroundColor: (theme) => theme.palette.background.paper,
+                          boxShadow: (theme) => theme.palette.mode === 'dark' 
+                            ? '0 2px 8px rgba(0,0,0,0.3)'
+                            : '0 2px 8px rgba(0,0,0,0.1)',
                           '&:hover': {
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            boxShadow: (theme) => theme.palette.mode === 'dark' 
+                              ? '0 4px 12px rgba(0,0,0,0.4)'
+                              : '0 4px 12px rgba(0,0,0,0.15)',
                           },
                           '&.Mui-focused': {
-                            boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
+                            boxShadow: (theme) => theme.palette.mode === 'dark' 
+                              ? '0 4px 20px rgba(143, 164, 243, 0.4)'
+                              : '0 4px 20px rgba(102, 126, 234, 0.3)',
                           }
                         }
                       }}

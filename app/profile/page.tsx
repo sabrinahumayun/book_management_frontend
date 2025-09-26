@@ -30,6 +30,8 @@ import {
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
+import { useMyBooks } from '@/hooks/useBooks';
+import { useFeedback } from '@/hooks/useFeedback';
 import { validateEmail } from '@/lib/utils';
 
 interface ProfileFormData {
@@ -43,6 +45,15 @@ export default function ProfilePage() {
   const [message, setMessage] = useState('');
 
   const { user, updateProfile, isUpdatingProfile, updateProfileError, isLoading } = useAuth();
+  
+  // Get user statistics
+  const { data: myBooksResponse } = useMyBooks({ page: 1, limit: 100 });
+  const { data: feedbackResponse } = useFeedback({ page: 1, limit: 100 });
+  
+  // Calculate statistics
+  const booksRead = myBooksResponse?.data?.length || 0;
+  const reviewsWritten = feedbackResponse?.data?.length || 0;
+  const currentlyReading = 0; // This would need to be implemented based on your business logic
 
   const {
     control,
@@ -89,7 +100,14 @@ export default function ProfilePage() {
     return (
       <ProtectedRoute>
         <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Box sx={{ width: 40, height: 40, border: '4px solid #f3f3f3', borderTop: '4px solid #1976d2', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+          <Box sx={{ 
+            width: 40, 
+            height: 40, 
+            border: (theme) => `4px solid ${theme.palette.mode === 'dark' ? '#475569' : '#f3f3f3'}`, 
+            borderTop: (theme) => `4px solid ${theme.palette.primary.main}`, 
+            borderRadius: '50%', 
+            animation: 'spin 1s linear infinite' 
+          }} />
         </Box>
       </ProtectedRoute>
     );
@@ -98,7 +116,7 @@ export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <Box sx={{ flexGrow: 1, bgcolor: '#f8fafc', minHeight: '100vh' }}>
+        <Box sx={{ flexGrow: 1, bgcolor: (theme) => theme.palette.background.default, minHeight: '100vh' }}>
         
         <Container maxWidth="lg" sx={{ py: 4 }}>
           {/* Header */}
@@ -355,10 +373,10 @@ export default function ProfilePage() {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="body2" color="text.secondary">
-                          Books Read
+                          My Books
                         </Typography>
                         <Typography variant="body2" fontWeight="medium">
-                          12
+                          {booksRead}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -366,7 +384,7 @@ export default function ProfilePage() {
                           Reviews Written
                         </Typography>
                         <Typography variant="body2" fontWeight="medium">
-                          8
+                          {reviewsWritten}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -374,7 +392,7 @@ export default function ProfilePage() {
                           Currently Reading
                         </Typography>
                         <Typography variant="body2" fontWeight="medium">
-                          3
+                          {currentlyReading}
                         </Typography>
                       </Box>
                     </Box>

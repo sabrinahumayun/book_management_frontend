@@ -40,6 +40,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBooks } from '@/hooks/useBooks';
 import { useUsers } from '@/hooks/useUsers';
 import { useFeedback } from '@/hooks/useFeedback';
+import DarkModeToggle from './DarkModeToggle';
 
 const drawerWidth = 280;
 
@@ -346,6 +347,7 @@ export default function AdminLayout({ children, onAddBook }: AdminLayoutProps) {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Admin Portal
           </Typography>
+          <DarkModeToggle />
         </Toolbar>
       </AppBar>
 
@@ -377,7 +379,7 @@ export default function AdminLayout({ children, onAddBook }: AdminLayoutProps) {
           ml: { md: sidebarOpen ? `${drawerWidth}px` : 0 },
           mt: '64px', // App bar height
           minHeight: 'calc(100vh - 64px)',
-          backgroundColor: '#f8fafc',
+          backgroundColor: (theme) => theme.palette.background.default,
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'flex-start',

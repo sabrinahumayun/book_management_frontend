@@ -95,7 +95,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   if (bookError || !book) {
     return (
       <ProtectedRoute>
-        <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }} suppressHydrationWarning>
+        <Box sx={{ minHeight: '100vh', bgcolor: (theme) => theme.palette.background.default }} suppressHydrationWarning>
           <Navigation />
           <Container maxWidth="lg" sx={{ py: 4 }}>
             <Alert severity="error">
@@ -117,7 +117,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   return (
     <ProtectedRoute>
       <Layout>
-        <Box sx={{ flexGrow: 1, bgcolor: '#f8fafc', minHeight: '100vh' }}>
+        <Box sx={{ flexGrow: 1, bgcolor: (theme) => theme.palette.background.default, minHeight: '100vh' }}>
         
         <Container maxWidth="lg" sx={{ py: 4 }}>
           {/* Back Button */}

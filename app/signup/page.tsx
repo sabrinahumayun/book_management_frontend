@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '@/hooks/useAuth';
 import { validateEmail, validatePassword } from '@/lib/utils';
+import DarkModeToggle from '@/components/DarkModeToggle';
 
 interface SignupFormData {
   email: string;
@@ -84,7 +85,9 @@ export default function SignupPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: (theme) => theme.palette.mode === 'dark' 
+          ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
+          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -101,12 +104,18 @@ export default function SignupPage() {
         >
           <Box
             sx={{
-              background: 'linear-gradient(135deg, #9c27b0 0%, #673ab7 100%)',
+              background: (theme) => theme.palette.mode === 'dark' 
+                ? 'linear-gradient(135deg, #8fa4f3 0%, #9c7bb8 100%)'
+                : 'linear-gradient(135deg, #9c27b0 0%, #673ab7 100%)',
               color: 'white',
               textAlign: 'center',
               py: 4,
+              position: 'relative',
             }}
           >
+            <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+              <DarkModeToggle sx={{ color: 'white' }} />
+            </Box>
             <LibraryBooks sx={{ fontSize: 48, mb: 2 }} />
             <Typography variant="h4" component="h1" fontWeight="bold">
               Create Your Account
@@ -329,11 +338,11 @@ export default function SignupPage() {
                     label={
                       <Typography variant="body2">
                         I agree to the{' '}
-                        <Link href="#" style={{ color: '#9c27b0', textDecoration: 'none' }}>
+                        <Link href="#" style={{ color: 'inherit', textDecoration: 'none' }}>
                           Terms of Service
                         </Link>{' '}
                         and{' '}
-                        <Link href="#" style={{ color: '#9c27b0', textDecoration: 'none' }}>
+                        <Link href="#" style={{ color: 'inherit', textDecoration: 'none' }}>
                           Privacy Policy
                         </Link>
                       </Typography>
@@ -352,9 +361,13 @@ export default function SignupPage() {
                       py: 1.5,
                       fontSize: '1.1rem',
                       fontWeight: 'bold',
-                      background: 'linear-gradient(135deg, #9c27b0 0%, #673ab7 100%)',
+                      background: (theme) => theme.palette.mode === 'dark' 
+                        ? 'linear-gradient(135deg, #8fa4f3 0%, #9c7bb8 100%)'
+                        : 'linear-gradient(135deg, #9c27b0 0%, #673ab7 100%)',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #7b1fa2 0%, #512da8 100%)',
+                        background: (theme) => theme.palette.mode === 'dark' 
+                          ? 'linear-gradient(135deg, #7c94f1 0%, #8a6bb5 100%)'
+                          : 'linear-gradient(135deg, #7b1fa2 0%, #512da8 100%)',
                       },
                     }}
                   >
@@ -368,7 +381,7 @@ export default function SignupPage() {
                     <Link
                       href="/login"
                       style={{
-                        color: '#9c27b0',
+                        color: 'inherit',
                         textDecoration: 'none',
                         fontWeight: 'bold',
                       }}
