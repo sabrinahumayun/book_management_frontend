@@ -35,8 +35,14 @@ interface LoginFormData {
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const { login, isLoggingIn, loginError } = useAuth();
   const router = useRouter();
+
+  // Prevent hydration mismatch by only rendering on client
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const {
     control,
@@ -56,6 +62,11 @@ export default function LoginPage() {
   const handleTogglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+  // Prevent hydration mismatch
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <Box

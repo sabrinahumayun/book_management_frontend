@@ -24,13 +24,13 @@ import {
   CircularProgress,
 } from '@mui/material';
 import {
-  Visibility as SearchIcon,
+  LibraryBooks as SearchIcon,
   RateReview,
   Person,
   LibraryBooks,
 } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ClearIcon from '@mui/icons-material/Clear';
+import { ArrowBack as ClearIcon } from '@mui/icons-material';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminLayout from '@/components/AdminLayout';
 import { useFeedback, useDeleteFeedback } from '@/hooks/useFeedback';
@@ -43,23 +43,33 @@ export default function AdminFeedbackPage() {
   });
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: feedbackResponse, isLoading, error } = useFeedback(filters);
+  // Get all feedback without search filters for frontend filtering
+  const { data: feedbackResponse, isLoading, error } = useFeedback({ page: 1, limit: 100 });
   const deleteFeedbackMutation = useDeleteFeedback();
 
-  const handleSearch = () => {
-    setFilters(prev => ({
-      ...prev,
-      page: 1,
-      search: searchTerm || undefined,
-    }));
-  };
+  // Frontend filtering logic
+  const allFeedbacks = feedbackResponse?.data || [];
+  
+  const filteredFeedbacks = allFeedbacks.filter(feedback => {
+    // Search by username (firstName + lastName)
+    const matchesSearch = !searchTerm || 
+      feedback.user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      feedback.user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${feedback.user.firstName} ${feedback.user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesSearch;
+  });
+
+  // Pagination for filtered results
+  const itemsPerPage = filters.limit || 10;
+  const totalPages = Math.ceil(filteredFeedbacks.length / itemsPerPage);
+  const startIndex = ((filters.page || 1) - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedFeedbacks = filteredFeedbacks.slice(startIndex, endIndex);
 
   const handleClearFilters = () => {
     setSearchTerm('');
-    setFilters({
-      page: 1,
-      limit: 10,
-    });
+    setFilters({ page: 1, limit: 10 });
   };
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
@@ -75,8 +85,6 @@ export default function AdminFeedbackPage() {
     }
   };
 
-  const feedbacks = feedbackResponse?.data || [];
-  const totalPages = feedbackResponse?.totalPages || 0;
 
   return (
     <ProtectedRoute requiredRole="admin">
@@ -98,7 +106,10 @@ export default function AdminFeedbackPage() {
                 <TextField
                   placeholder="Search by username..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setFilters(prev => ({ ...prev, page: 1 })); // Reset to first page when searching
+                  }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -108,9 +119,6 @@ export default function AdminFeedbackPage() {
                   }}
                   sx={{ minWidth: 250 }}
                 />
-                <Button variant="contained" onClick={handleSearch} startIcon={<SearchIcon />}>
-                  Search
-                </Button>
                 <Button variant="outlined" onClick={handleClearFilters} startIcon={<ClearIcon />}>
                   Clear
                 </Button>
@@ -139,7 +147,7 @@ export default function AdminFeedbackPage() {
           ) : (
             <>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {feedbacks.map((feedback) => (
+                {paginatedFeedbacks.map((feedback) => (
                   <Paper key={feedback.id} sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>

@@ -36,13 +36,13 @@ import {
   Tooltip,
 } from '@mui/material';
 import {
-  Search as SearchIcon,
-  Clear as ClearIcon,
+  LibraryBooks as SearchIcon,
+  ArrowBack as ClearIcon,
   Edit,
-  Delete,
-  PersonAdd,
-  FilterList,
-  Refresh,
+  Warning as DeleteIcon,
+  Person as Add,
+  Settings as FilterIcon,
+  ArrowBack as RefreshIcon,
 } from '@mui/icons-material';
 import { useUsers, useDeleteUser } from '@/hooks/useUsers';
 import { UserFilters } from '@/lib/usersApi';
@@ -56,41 +56,45 @@ export default function AdminUsersPage() {
     limit: 10,
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'admin' | 'user' | ''>('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editUserOpen, setEditUserOpen] = useState(false);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  const { data: usersResponse, isLoading, error } = useUsers(filters);
+  // Get all users without search filters for frontend filtering
+  const { data: usersResponse, isLoading, error } = useUsers({ page: 1, limit: 100 });
   const deleteUserMutation = useDeleteUser();
 
-  // Debug: Log the response data
-  useEffect(() => {
-    console.log('Users response:', usersResponse);
-    console.log('Users loading:', isLoading);
-    console.log('Users error:', error);
-    console.log('Users array:', usersResponse?.data);
-    console.log('Users total:', usersResponse?.total);
-    console.log('Users response type:', typeof usersResponse);
-    console.log('Users response keys:', usersResponse ? Object.keys(usersResponse) : 'undefined');
-  }, [usersResponse, isLoading, error]);
 
-  const handleSearch = () => {
-    setFilters(prev => ({
-      ...prev,
-      page: 1,
-      search: searchTerm || undefined,
-    }));
-  };
+  // Frontend filtering logic
+  const allUsers = usersResponse?.data || [];
+  
+  const filteredUsers = allUsers.filter(user => {
+    // Search filter
+    const matchesSearch = !searchTerm || 
+      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Role filter
+    const matchesRole = !roleFilter || user.role === roleFilter;
+    
+    return matchesSearch && matchesRole;
+  });
+
+  // Pagination for filtered results
+  const itemsPerPage = filters.limit || 10;
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = ((filters.page || 1) - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
 
   const handleClearFilters = () => {
     setSearchTerm('');
-    setFilters({
-      page: 1,
-      limit: 10,
-      search: undefined,
-      role: undefined,
-    });
+    setRoleFilter('');
+    setFilters({ page: 1, limit: 10 });
   };
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
@@ -126,12 +130,6 @@ export default function AdminUsersPage() {
     setSelectedUser(null);
   };
 
-  const users = usersResponse?.data || [];
-  const totalPages = usersResponse?.totalPages || 0;
-  
-  // Debug: Log the extracted users
-  console.log('Extracted users:', users);
-  console.log('Users length:', users.length);
 
   return (
     <ProtectedRoute requiredRole="admin">
@@ -151,12 +149,12 @@ export default function AdminUsersPage() {
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <Tooltip title="Refresh Data">
                   <IconButton color="primary">
-                    <Refresh />
+                    <RefreshIcon />
                   </IconButton>
                 </Tooltip>
                 <Button
                   variant="contained"
-                  startIcon={<PersonAdd />}
+                  startIcon={<Add />}
                   onClick={() => setAddUserOpen(true)}
                   sx={{ minWidth: 140 }}
                 >
@@ -173,7 +171,10 @@ export default function AdminUsersPage() {
                 <TextField
                   placeholder="Search users..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setFilters(prev => ({ ...prev, page: 1 })); // Reset to first page when searching
+                  }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -183,24 +184,18 @@ export default function AdminUsersPage() {
                   }}
                   sx={{ minWidth: 250 }}
                 />
-                <Button variant="contained" onClick={handleSearch} startIcon={<SearchIcon />}>
-                  Search
-                </Button>
                 <Button variant="outlined" onClick={handleClearFilters} startIcon={<ClearIcon />}>
                   Clear
                 </Button>
                 <FormControl sx={{ minWidth: 120 }}>
                   <InputLabel>Role</InputLabel>
                   <Select
-                    value={filters.role || ''}
+                    value={roleFilter}
                     label="Role"
                     onChange={(e) => {
-                      const role = e.target.value;
-                      setFilters(prev => ({ 
-                        ...prev, 
-                        role: role === '' ? undefined : role as 'admin' | 'user',
-                        page: 1 // Reset to first page when filter changes
-                      }));
+                      const role = e.target.value as 'admin' | 'user' | '';
+                      setRoleFilter(role);
+                      setFilters(prev => ({ ...prev, page: 1 })); // Reset to first page
                     }}
                   >
                     <MenuItem value="">All Roles</MenuItem>
@@ -238,12 +233,6 @@ export default function AdminUsersPage() {
                 </Alert>
               ) : (
                 <>
-                  {/* Debug info */}
-                  <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-                    <Typography variant="body2">
-                      Debug: Found {users.length} users. Loading: {isLoading ? 'Yes' : 'No'}. Error: {error ? 'Yes' : 'No'}
-                    </Typography>
-                  </Box>
                   
                   <TableContainer component={Paper} variant="outlined">
                     <Table>
@@ -258,7 +247,7 @@ export default function AdminUsersPage() {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {users.map((user) => (
+                        {paginatedUsers.map((user) => (
                           <TableRow key={user.id} hover>
                             <TableCell>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -316,7 +305,7 @@ export default function AdminUsersPage() {
                                     color="error"
                                     onClick={() => handleDeleteClick(user)}
                                   >
-                                    <Delete />
+                                    <DeleteIcon />
                                   </IconButton>
                                 </Tooltip>
                               </Box>

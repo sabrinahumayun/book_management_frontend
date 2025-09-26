@@ -45,18 +45,21 @@ export const usersAPI = {
     const response = await api.get(`/auth/users?${params.toString()}`);
     const data = response.data;
     
-    console.log('Raw API response:', data);
     
     // Handle the specific API response format: { message: "...", users: [...] }
     if (data && data.users && Array.isArray(data.users)) {
+      const users = data.users;
+      const total = data.total || users.length; // Use total from API if available
+      const limit = filters.limit || 10;
+      const totalPages = Math.ceil(total / limit);
+      
       const transformedData = {
-        data: data.users,
-        total: data.users.length,
+        data: users,
+        total: total,
         page: filters.page || 1,
-        limit: filters.limit || data.users.length,
-        totalPages: 1,
+        limit: limit,
+        totalPages: totalPages,
       };
-      console.log('Transformed data:', transformedData);
       return transformedData;
     }
     

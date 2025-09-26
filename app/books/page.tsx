@@ -86,11 +86,11 @@ export default function BooksPage() {
   const [deleteBookDialogOpen, setDeleteBookDialogOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
-  // Get user's own books
-  const { data: myBooksResponse, isLoading: myBooksLoading, error: myBooksError } = useMyBooks(filters);
+  // Get user's own books without search filters for frontend filtering
+  const { data: myBooksResponse, isLoading: myBooksLoading, error: myBooksError } = useMyBooks({ page: 1, limit: 100 });
 
-  // Get all books (including user's own books)
-  const { data: allBooksResponse, isLoading: allBooksLoading, error: allBooksError } = useBooks(filters);
+  // Get all books without search filters for frontend filtering
+  const { data: allBooksResponse, isLoading: allBooksLoading, error: allBooksError } = useBooks({ page: 1, limit: 100 });
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -101,12 +101,36 @@ export default function BooksPage() {
     });
   };
 
+  // Frontend filtering logic
+  const allBooks = allBooksResponse?.data || [];
+  const myBooks = myBooksResponse?.data || [];
+  
+  const filteredAllBooks = allBooks.filter(book => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      book.title.toLowerCase().includes(searchLower) ||
+      book.author.toLowerCase().includes(searchLower) ||
+      book.isbn.toLowerCase().includes(searchLower)
+    );
+  });
+  
+  const filteredMyBooks = myBooks.filter(book => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      book.title.toLowerCase().includes(searchLower) ||
+      book.author.toLowerCase().includes(searchLower) ||
+      book.isbn.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Filter out user's own books from filtered all books for the "Browse Books" tab
+  const filteredOtherBooks = filteredAllBooks.filter(book => book.createdBy !== user?.id);
+
   const handleSearch = () => {
-    setFilters(prev => ({
-      ...prev,
-      title: searchTerm || undefined,
-      page: 1,
-    }));
+    // No API call needed - just reset to first page for frontend filtering
+    setFilters(prev => ({ ...prev, page: 1 }));
   };
 
   const handleClearFilters = () => {
@@ -142,13 +166,16 @@ export default function BooksPage() {
     setAddBookModalOpen(true);
   };
 
-  const myBooks = myBooksResponse?.data || [];
-  const allBooks = allBooksResponse?.data || [];
-  const myBooksTotalPages = myBooksResponse?.totalPages || 0;
-  const allBooksTotalPages = allBooksResponse?.totalPages || 0;
+  // Calculate pagination for filtered results
+  const itemsPerPage = filters.limit || 12;
+  const myBooksTotalPages = Math.ceil(filteredMyBooks.length / itemsPerPage);
+  const otherBooksTotalPages = Math.ceil(filteredOtherBooks.length / itemsPerPage);
   
-  // Filter out user's own books from all books for the "Browse Books" tab
-  const otherBooks = allBooks.filter(book => book.createdBy !== user?.id);
+  // Paginate filtered results
+  const startIndex = ((filters.page || 1) - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedMyBooks = filteredMyBooks.slice(startIndex, endIndex);
+  const paginatedOtherBooks = filteredOtherBooks.slice(startIndex, endIndex);
 
   const renderBookCard = (book: any, isMyBook: boolean = false) => (
     <Card
@@ -467,7 +494,7 @@ export default function BooksPage() {
                       <LibraryBooks />
                       <span>My Books</span>
                       <Chip 
-                        label={myBooks.length} 
+                        label={filteredMyBooks.length} 
                         size="small" 
                         color="primary" 
                         sx={{ minWidth: 24, height: 24 }}
@@ -481,7 +508,7 @@ export default function BooksPage() {
                       <Home />
                       <span>Browse Books</span>
                       <Chip 
-                        label={otherBooks.length} 
+                        label={filteredOtherBooks.length} 
                         size="small" 
                         color="secondary" 
                         sx={{ minWidth: 24, height: 24 }}
@@ -519,8 +546,10 @@ export default function BooksPage() {
                       fullWidth
                       placeholder="Search by title, author, or ISBN..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setFilters(prev => ({ ...prev, page: 1 })); // Reset to first page when searching
+                      }}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -556,27 +585,6 @@ export default function BooksPage() {
                   </Box>
                   
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <Button
-                      variant="contained"
-                      onClick={handleSearch}
-                      startIcon={<SearchIcon />}
-                      sx={{
-                        borderRadius: 3,
-                        px: 4,
-                        py: 1.5,
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                          boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
-                          transform: 'translateY(-2px)',
-                        },
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      Search
-                    </Button>
-                    
                     <Button
                       variant="outlined"
                       onClick={handleClearFilters}
@@ -645,10 +653,10 @@ export default function BooksPage() {
                     gap: 4,
                     px: 1
                   }}>
-                    {myBooks.map((book) => renderBookCard(book, true))}
+                    {paginatedMyBooks.map((book) => renderBookCard(book, true))}
                   </Box>
                   
-                  {myBooks.length === 0 && (
+                  {filteredMyBooks.length === 0 && (
                     <Box sx={{ textAlign: 'center', py: 8 }}>
                       <Box
                         sx={{
@@ -732,10 +740,10 @@ export default function BooksPage() {
                     gap: 4,
                     px: 1
                   }}>
-                    {otherBooks.map((book) => renderBookCard(book, false))}
+                    {paginatedOtherBooks.map((book) => renderBookCard(book, false))}
                   </Box>
                   
-                  {otherBooks.length === 0 && (
+                  {filteredOtherBooks.length === 0 && (
                     <Box sx={{ textAlign: 'center', py: 8 }}>
                       <LibraryBooks sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                       <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -747,10 +755,10 @@ export default function BooksPage() {
                     </Box>
                   )}
                   
-                  {allBooksTotalPages > 1 && (
+                  {otherBooksTotalPages > 1 && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                       <Pagination
-                        count={allBooksTotalPages}
+                        count={otherBooksTotalPages}
                         page={filters.page || 1}
                         onChange={handlePageChange}
                         color="primary"
