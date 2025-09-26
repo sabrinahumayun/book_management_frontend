@@ -76,4 +76,11 @@ export const feedbackAPI = {
   deleteFeedback: async (id: number): Promise<void> => {
     await api.delete(`/feedback/${id}`);
   },
+
+  // Bulk delete feedback
+  bulkDeleteFeedback: async (feedbackIds: number[]): Promise<void> => {
+    await api.delete('/feedback/bulk', {
+      data: { feedbackIds }
+    });
+  },
 };

@@ -63,6 +63,13 @@ export default function EditFeedbackModal({ open, onClose, feedback }: EditFeedb
   const onSubmit = (data: FeedbackFormData) => {
     if (!feedback) return;
     
+    // Validate feedback ID
+    if (!feedback.id || isNaN(feedback.id) || feedback.id <= 0) {
+      console.error('Invalid feedback ID in EditFeedbackModal:', feedback.id);
+      toast.error('Invalid feedback ID. Please refresh the page and try again.');
+      return;
+    }
+    
     const updateData: UpdateFeedbackData = {
       rating: Math.round(data.rating), // Ensure rating is an integer
       comment: data.comment,

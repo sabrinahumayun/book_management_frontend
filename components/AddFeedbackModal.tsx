@@ -54,11 +54,24 @@ export default function AddFeedbackModal({ open, onClose, book }: AddFeedbackMod
   const onSubmit = (data: FeedbackFormData) => {
     if (!book) return;
     
+    // Validate book ID
+    if (!book.id || isNaN(book.id) || book.id <= 0) {
+      console.error('Invalid book ID in AddFeedbackModal:', book.id);
+      toast.error('Invalid book ID. Please refresh the page and try again.');
+      return;
+    }
+    
     const feedbackData: CreateFeedbackData = {
       rating: Math.round(data.rating), // Ensure rating is an integer
       comment: data.comment,
       bookId: book.id,
     };
+
+    // Debug logging
+    console.log('Creating feedback with data:', feedbackData);
+    console.log('Book object:', book);
+    console.log('Rating type:', typeof feedbackData.rating, 'value:', feedbackData.rating);
+    console.log('BookId type:', typeof feedbackData.bookId, 'value:', feedbackData.bookId);
 
     createFeedbackMutation.mutate(feedbackData, {
       onSuccess: () => {

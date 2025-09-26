@@ -32,6 +32,7 @@ import {
   MenuItem,
   Tooltip,
   CircularProgress,
+  Checkbox,
 } from '@mui/material';
 import {
   Add,
@@ -45,8 +46,10 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { useForm, Controller } from 'react-hook-form';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminLayout from '@/components/AdminLayout';
-import { useBooks, useCreateBook, useUpdateBook, useDeleteBook } from '@/hooks/useBooks';
+import { useBooks, useCreateBook, useUpdateBook, useDeleteBook, useBulkDeleteBooks } from '@/hooks/useBooks';
 import { Book, CreateBookData, UpdateBookData, BookFilters } from '@/types/books';
+import BulkDeleteDialog from '@/components/BulkDeleteDialog';
+import { toast } from 'react-toastify';
 
 interface BookFormData {
   title: string;
@@ -63,11 +66,14 @@ export default function AdminBooksPage() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState<'title' | 'author' | 'isbn' | 'createdBy'>('title');
+  const [selectedBookIds, setSelectedBookIds] = useState<number[]>([]);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   const { data: booksResponse, isLoading, error } = useBooks(filters);
   const createBookMutation = useCreateBook();
   const updateBookMutation = useUpdateBook();
   const deleteBookMutation = useDeleteBook();
+  const bulkDeleteBooksMutation = useBulkDeleteBooks();
 
   const {
     control,
@@ -178,6 +184,49 @@ export default function AdminBooksPage() {
     }));
   };
 
+  // Bulk delete handlers
+  const handleSelectBook = (bookId: number) => {
+    setSelectedBookIds(prev => 
+      prev.includes(bookId) 
+        ? prev.filter(id => id !== bookId)
+        : [...prev, bookId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedBookIds.length === books.length) {
+      setSelectedBookIds([]);
+    } else {
+      setSelectedBookIds(books.map(book => book.id));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedBookIds.length === 0) {
+      toast.error('No books selected for deletion');
+      return;
+    }
+    setBulkDeleteDialogOpen(true);
+  };
+
+  const handleBulkDeleteConfirm = () => {
+    bulkDeleteBooksMutation.mutate(selectedBookIds, {
+      onSuccess: () => {
+        toast.success(`Successfully deleted ${selectedBookIds.length} books! 🗑️`);
+        setSelectedBookIds([]);
+        setBulkDeleteDialogOpen(false);
+      },
+      onError: (error: any) => {
+        const errorMessage = error?.response?.data?.message || 'Failed to delete books';
+        toast.error(errorMessage);
+      },
+    });
+  };
+
+  const handleBulkDeleteCancel = () => {
+    setBulkDeleteDialogOpen(false);
+  };
+
   const books = booksResponse?.data || [];
   const totalPages = booksResponse?.totalPages || 0;
 
@@ -205,6 +254,18 @@ export default function AdminBooksPage() {
               >
                 Add Book
               </Button>
+              
+              {selectedBookIds.length > 0 && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={handleBulkDelete}
+                  sx={{ minWidth: 140 }}
+                >
+                  Delete ({selectedBookIds.length})
+                </Button>
+              )}
             </Box>
           </Box>
 
@@ -286,6 +347,13 @@ export default function AdminBooksPage() {
                     <Table>
                       <TableHead>
                         <TableRow>
+                          <TableCell padding="checkbox">
+                            <Checkbox
+                              checked={selectedBookIds.length === books.length && books.length > 0}
+                              indeterminate={selectedBookIds.length > 0 && selectedBookIds.length < books.length}
+                              onChange={handleSelectAll}
+                            />
+                          </TableCell>
                           <TableCell>Title</TableCell>
                           <TableCell>Author</TableCell>
                           <TableCell>ISBN</TableCell>
@@ -297,6 +365,12 @@ export default function AdminBooksPage() {
                       <TableBody>
                         {books.map((book) => (
                           <TableRow key={book.id} hover>
+                            <TableCell padding="checkbox">
+                              <Checkbox
+                                checked={selectedBookIds.includes(book.id)}
+                                onChange={() => handleSelectBook(book.id)}
+                              />
+                            </TableCell>
                             <TableCell>
                               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
@@ -463,6 +537,25 @@ export default function AdminBooksPage() {
             </DialogActions>
           </form>
         </Dialog>
+
+        {/* Bulk Delete Dialog */}
+        <BulkDeleteDialog
+          open={bulkDeleteDialogOpen}
+          onClose={handleBulkDeleteCancel}
+          onConfirm={handleBulkDeleteConfirm}
+          isLoading={bulkDeleteBooksMutation.isPending}
+          title="Bulk Delete Books"
+          items={books
+            .filter(book => selectedBookIds.includes(book.id))
+            .map(book => ({
+              id: book.id,
+              name: book.title,
+              subtitle: `by ${book.author}`
+            }))
+          }
+          selectedCount={selectedBookIds.length}
+          itemType="books"
+        />
       </AdminLayout>
     </ProtectedRoute>
   );

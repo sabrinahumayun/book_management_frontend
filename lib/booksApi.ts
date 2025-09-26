@@ -52,4 +52,11 @@ export const booksAPI = {
   deleteBook: async (id: number): Promise<void> => {
     await api.delete(`/books/${id}`);
   },
+
+  // Bulk delete books
+  bulkDeleteBooks: async (bookIds: number[]): Promise<void> => {
+    await api.delete('/books/bulk', {
+      data: { bookIds }
+    });
+  },
 };

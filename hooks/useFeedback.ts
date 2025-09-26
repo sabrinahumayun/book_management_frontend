@@ -122,3 +122,16 @@ export function useDeleteFeedback() {
     },
   });
 }
+
+// Hook for bulk deleting feedback
+export function useBulkDeleteFeedback() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (feedbackIds: number[]) => feedbackAPI.bulkDeleteFeedback(feedbackIds),
+    onSuccess: () => {
+      // Invalidate and refetch feedback list
+      queryClient.invalidateQueries({ queryKey: feedbackKeys.lists() });
+    },
+  });
+}

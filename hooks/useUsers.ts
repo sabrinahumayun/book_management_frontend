@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersAPI, UserFilters, CreateUserData, UpdateUserData } from '@/lib/usersApi';
+import { authAPI } from '@/lib/api';
 
 // Query keys
 export const userKeys = {
@@ -80,6 +81,36 @@ export function useDeleteUser() {
       // Invalidate and refetch users list
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+    },
+  });
+}
+
+// Bulk delete users mutation (Admin only)
+export function useBulkDeleteUsers() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userIds: number[]) => authAPI.bulkDeleteUsers(userIds),
+    onSuccess: () => {
+      // Invalidate and refetch users list
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+    },
+  });
+}
+
+// Delete user data mutation (Admin only) - Cascade deletion
+export function useDeleteUserData() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: number) => authAPI.deleteUserData(userId),
+    onSuccess: () => {
+      // Invalidate and refetch all related data
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: ['books'] });
+      queryClient.invalidateQueries({ queryKey: ['feedback'] });
     },
   });
 }

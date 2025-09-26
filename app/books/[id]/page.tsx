@@ -42,7 +42,29 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   const router = useRouter();
   const { user } = useAuth();
   const resolvedParams = use(params);
-  const bookId = parseInt(resolvedParams.id);
+  const bookId = parseInt(resolvedParams.id, 10); // Use radix 10 for decimal parsing
+  
+  // Debug logging
+  console.log('Book detail page - resolvedParams:', resolvedParams);
+  console.log('Book detail page - bookId:', bookId, 'type:', typeof bookId);
+  console.log('Book detail page - original id string:', resolvedParams.id);
+  
+  // Validate that bookId is a valid number
+  if (isNaN(bookId) || bookId <= 0 || !Number.isInteger(bookId)) {
+    console.error('Invalid book ID:', resolvedParams.id, 'parsed as:', bookId);
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: (theme) => theme.palette.background.default }}>
+            <Alert severity="error">
+              Invalid book ID. Please check the URL and try again.
+            </Alert>
+          </Box>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
+  
   const [addFeedbackOpen, setAddFeedbackOpen] = useState(false);
   const [editFeedbackOpen, setEditFeedbackOpen] = useState(false);
   const [editBookOpen, setEditBookOpen] = useState(false);

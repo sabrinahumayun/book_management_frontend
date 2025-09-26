@@ -87,3 +87,17 @@ export function useDeleteBook() {
     },
   });
 }
+
+// Hook for bulk deleting books
+export function useBulkDeleteBooks() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (bookIds: number[]) => booksAPI.bulkDeleteBooks(bookIds),
+    onSuccess: () => {
+      // Invalidate and refetch both books lists
+      queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: booksKeys.myBooks() });
+    },
+  });
+}

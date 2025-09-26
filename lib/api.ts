@@ -71,6 +71,20 @@ export const authAPI = {
     const response: AxiosResponse = await api.post('/auth/logout');
     return response.data;
   },
+
+  // Bulk delete users (Admin only)
+  bulkDeleteUsers: async (userIds: number[]) => {
+    const response: AxiosResponse = await api.delete('/auth/users/bulk', {
+      data: { userIds }
+    });
+    return response.data;
+  },
+
+  // Delete user data (Admin only) - Cascade deletion
+  deleteUserData: async (userId: number) => {
+    const response: AxiosResponse = await api.delete(`/auth/users/${userId}/data`);
+    return response.data;
+  },
 };
 
 export default api;

@@ -34,6 +34,7 @@ import {
   TableRow,
   Paper,
   Tooltip,
+  Checkbox,
 } from '@mui/material';
 import {
   LibraryBooks as SearchIcon,
@@ -44,11 +45,13 @@ import {
   Settings as FilterIcon,
   ArrowBack as RefreshIcon,
 } from '@mui/icons-material';
-import { useUsers, useDeleteUser } from '@/hooks/useUsers';
+import { useUsers, useDeleteUser, useBulkDeleteUsers } from '@/hooks/useUsers';
 import { UserFilters } from '@/lib/usersApi';
 import { User } from '@/types/auth';
 import EditUserModal from '@/components/EditUserModal';
 import AddUserModal from '@/components/AddUserModal';
+import BulkDeleteDialog from '@/components/BulkDeleteDialog';
+import { toast } from 'react-toastify';
 
 export default function AdminUsersPage() {
   const [filters, setFilters] = useState<UserFilters>({
@@ -61,10 +64,13 @@ export default function AdminUsersPage() {
   const [editUserOpen, setEditUserOpen] = useState(false);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   // Get all users without search filters for frontend filtering
   const { data: usersResponse, isLoading, error } = useUsers({ page: 1, limit: 100 });
   const deleteUserMutation = useDeleteUser();
+  const bulkDeleteUsersMutation = useBulkDeleteUsers();
 
 
   // Frontend filtering logic
@@ -130,6 +136,49 @@ export default function AdminUsersPage() {
     setSelectedUser(null);
   };
 
+  // Bulk delete handlers
+  const handleSelectUser = (userId: number) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedUserIds.length === paginatedUsers.length) {
+      setSelectedUserIds([]);
+    } else {
+      setSelectedUserIds(paginatedUsers.map(user => user.id));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedUserIds.length === 0) {
+      toast.error('No users selected for deletion');
+      return;
+    }
+    setBulkDeleteDialogOpen(true);
+  };
+
+  const handleBulkDeleteConfirm = () => {
+    bulkDeleteUsersMutation.mutate(selectedUserIds, {
+      onSuccess: () => {
+        toast.success(`Successfully deleted ${selectedUserIds.length} users! 🗑️`);
+        setSelectedUserIds([]);
+        setBulkDeleteDialogOpen(false);
+      },
+      onError: (error: any) => {
+        const errorMessage = error?.response?.data?.message || 'Failed to delete users';
+        toast.error(errorMessage);
+      },
+    });
+  };
+
+  const handleBulkDeleteCancel = () => {
+    setBulkDeleteDialogOpen(false);
+  };
+
 
   return (
     <ProtectedRoute requiredRole="admin">
@@ -160,6 +209,18 @@ export default function AdminUsersPage() {
                 >
                   Add User
                 </Button>
+                
+                {selectedUserIds.length > 0 && (
+                  <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={handleBulkDelete}
+                    sx={{ minWidth: 140 }}
+                  >
+                    Delete ({selectedUserIds.length})
+                  </Button>
+                )}
               </Box>
             </Box>
           </Box>
@@ -238,6 +299,13 @@ export default function AdminUsersPage() {
                     <Table>
                       <TableHead>
                         <TableRow>
+                          <TableCell padding="checkbox">
+                            <Checkbox
+                              checked={selectedUserIds.length === paginatedUsers.length && paginatedUsers.length > 0}
+                              indeterminate={selectedUserIds.length > 0 && selectedUserIds.length < paginatedUsers.length}
+                              onChange={handleSelectAll}
+                            />
+                          </TableCell>
                           <TableCell>User</TableCell>
                           <TableCell>Email</TableCell>
                           <TableCell>Role</TableCell>
@@ -249,6 +317,12 @@ export default function AdminUsersPage() {
                       <TableBody>
                         {paginatedUsers.map((user) => (
                           <TableRow key={user.id} hover>
+                            <TableCell padding="checkbox">
+                              <Checkbox
+                                checked={selectedUserIds.includes(user.id)}
+                                onChange={() => handleSelectUser(user.id)}
+                              />
+                            </TableCell>
                             <TableCell>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <Avatar sx={{ bgcolor: 'primary.main' }}>
@@ -371,6 +445,25 @@ export default function AdminUsersPage() {
         <AddUserModal
           open={addUserOpen}
           onClose={() => setAddUserOpen(false)}
+        />
+
+        {/* Bulk Delete Dialog */}
+        <BulkDeleteDialog
+          open={bulkDeleteDialogOpen}
+          onClose={handleBulkDeleteCancel}
+          onConfirm={handleBulkDeleteConfirm}
+          isLoading={bulkDeleteUsersMutation.isPending}
+          title="Bulk Delete Users"
+          items={paginatedUsers
+            .filter(user => selectedUserIds.includes(user.id))
+            .map(user => ({
+              id: user.id,
+              name: `${user.firstName} ${user.lastName}`,
+              subtitle: user.email
+            }))
+          }
+          selectedCount={selectedUserIds.length}
+          itemType="users"
         />
       </AdminLayout>
     </ProtectedRoute>
