@@ -22,19 +22,23 @@ import {
   IconButton,
   Alert,
   CircularProgress,
+  Checkbox,
 } from '@mui/material';
 import {
-  Visibility as SearchIcon,
+  LibraryBooks as SearchIcon,
   RateReview,
   Person,
   LibraryBooks,
 } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ClearIcon from '@mui/icons-material/Clear';
+import { ArrowBack as ClearIcon } from '@mui/icons-material';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import Navigation from '@/components/Navigation';
-import { useFeedback, useDeleteFeedback } from '@/hooks/useFeedback';
-import { FeedbackFilters } from '@/types/feedback';
+import AdminLayout from '@/components/AdminLayout';
+import DeleteReviewDialog from '@/components/DeleteReviewDialog';
+import { useAdminReviews, useDeleteFeedback, useBulkDeleteFeedback } from '@/hooks/useFeedback';
+import { FeedbackFilters, Feedback } from '@/types/feedback';
+import BulkDeleteDialog from '@/components/BulkDeleteDialog';
+import { toast } from 'react-toastify';
 
 export default function AdminFeedbackPage() {
   const [filters, setFilters] = useState<FeedbackFilters>({
@@ -42,23 +46,39 @@ export default function AdminFeedbackPage() {
     limit: 10,
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
+  const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<number[]>([]);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
-  const { data: feedbackResponse, isLoading, error } = useFeedback(filters);
+  // Get all admin reviews without search filters for frontend filtering
+  const { data: feedbackResponse, isLoading, error } = useAdminReviews({ page: 1, limit: 100 });
   const deleteFeedbackMutation = useDeleteFeedback();
+  const bulkDeleteFeedbackMutation = useBulkDeleteFeedback();
 
-  const handleSearch = () => {
-    setFilters(prev => ({
-      ...prev,
-      page: 1,
-    }));
-  };
+  // Frontend filtering logic
+  const allFeedbacks = feedbackResponse?.data || [];
+  
+  const filteredFeedbacks = allFeedbacks.filter(feedback => {
+    // Search by username (firstName + lastName)
+    const matchesSearch = !searchTerm || 
+      feedback.user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      feedback.user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${feedback.user.firstName} ${feedback.user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesSearch;
+  });
+
+  // Pagination for filtered results
+  const itemsPerPage = filters.limit || 10;
+  const totalPages = Math.ceil(filteredFeedbacks.length / itemsPerPage);
+  const startIndex = ((filters.page || 1) - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedFeedbacks = filteredFeedbacks.slice(startIndex, endIndex);
 
   const handleClearFilters = () => {
     setSearchTerm('');
-    setFilters({
-      page: 1,
-      limit: 10,
-    });
+    setFilters({ page: 1, limit: 10 });
   };
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
@@ -68,19 +88,63 @@ export default function AdminFeedbackPage() {
     }));
   };
 
-  const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this feedback?')) {
-      deleteFeedbackMutation.mutate(id);
+  const handleDelete = (feedback: Feedback) => {
+    setSelectedFeedback(feedback);
+    setDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setSelectedFeedback(null);
+  };
+
+  // Bulk delete handlers
+  const handleSelectFeedback = (feedbackId: number) => {
+    setSelectedFeedbackIds(prev => 
+      prev.includes(feedbackId) 
+        ? prev.filter(id => id !== feedbackId)
+        : [...prev, feedbackId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedFeedbackIds.length === paginatedFeedbacks.length) {
+      setSelectedFeedbackIds([]);
+    } else {
+      setSelectedFeedbackIds(paginatedFeedbacks.map(feedback => feedback.id));
     }
   };
 
-  const feedbacks = feedbackResponse?.data || [];
-  const totalPages = feedbackResponse?.totalPages || 0;
+  const handleBulkDelete = () => {
+    if (selectedFeedbackIds.length === 0) {
+      toast.error('No reviews selected for deletion');
+      return;
+    }
+    setBulkDeleteDialogOpen(true);
+  };
+
+  const handleBulkDeleteConfirm = () => {
+    bulkDeleteFeedbackMutation.mutate(selectedFeedbackIds, {
+      onSuccess: () => {
+        toast.success(`Successfully deleted ${selectedFeedbackIds.length} reviews! 🗑️`);
+        setSelectedFeedbackIds([]);
+        setBulkDeleteDialogOpen(false);
+      },
+      onError: (error: any) => {
+        const errorMessage = error?.response?.data?.message || 'Failed to delete reviews';
+        toast.error(errorMessage);
+      },
+    });
+  };
+
+  const handleBulkDeleteCancel = () => {
+    setBulkDeleteDialogOpen(false);
+  };
+
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }} suppressHydrationWarning>
-        <Navigation />
+      <AdminLayout>
         
         <Container maxWidth="xl" sx={{ py: 4 }}>
           <Box sx={{ mb: 4 }}>
@@ -96,9 +160,12 @@ export default function AdminFeedbackPage() {
             <CardContent>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                 <TextField
-                  placeholder="Search feedback..."
+                  placeholder="Search by username..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setFilters(prev => ({ ...prev, page: 1 })); // Reset to first page when searching
+                  }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -108,9 +175,6 @@ export default function AdminFeedbackPage() {
                   }}
                   sx={{ minWidth: 250 }}
                 />
-                <Button variant="contained" onClick={handleSearch} startIcon={<SearchIcon />}>
-                  Search
-                </Button>
                 <Button variant="outlined" onClick={handleClearFilters} startIcon={<ClearIcon />}>
                   Clear
                 </Button>
@@ -130,6 +194,28 @@ export default function AdminFeedbackPage() {
             </CardContent>
           </Card>
 
+          {/* Bulk Actions */}
+          {selectedFeedbackIds.length > 0 && (
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography variant="h6" color="error">
+                    {selectedFeedbackIds.length} review{selectedFeedbackIds.length !== 1 ? 's' : ''} selected
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={handleBulkDelete}
+                    sx={{ minWidth: 140 }}
+                  >
+                    Delete Selected
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+
           {isLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
               <CircularProgress />
@@ -138,11 +224,30 @@ export default function AdminFeedbackPage() {
             <Alert severity="error">Failed to load feedback. Please try again.</Alert>
           ) : (
             <>
+              {/* Select All */}
+              {paginatedFeedbacks.length > 0 && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, p: 2, backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
+                  <Checkbox
+                    checked={selectedFeedbackIds.length === paginatedFeedbacks.length && paginatedFeedbacks.length > 0}
+                    indeterminate={selectedFeedbackIds.length > 0 && selectedFeedbackIds.length < paginatedFeedbacks.length}
+                    onChange={handleSelectAll}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    Select all {paginatedFeedbacks.length} reviews
+                  </Typography>
+                </Box>
+              )}
+              
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {feedbacks.map((feedback) => (
+                {paginatedFeedbacks.map((feedback) => (
                   <Paper key={feedback.id} sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Checkbox
+                          checked={selectedFeedbackIds.includes(feedback.id)}
+                          onChange={() => handleSelectFeedback(feedback.id)}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
                           {feedback.user.firstName[0]}
                         </Avatar>
@@ -154,13 +259,14 @@ export default function AdminFeedbackPage() {
                             {feedback.user.email}
                           </Typography>
                         </Box>
+                        </Box>
                       </Box>
                       
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Rating value={feedback.rating} readOnly size="small" />
                         <IconButton
                           size="small"
-                          onClick={() => handleDelete(feedback.id)}
+                          onClick={() => handleDelete(feedback)}
                           color="error"
                         >
                           <DeleteIcon />
@@ -201,7 +307,33 @@ export default function AdminFeedbackPage() {
             </>
           )}
         </Container>
-      </Box>
+
+        {/* Delete Review Modal */}
+        <DeleteReviewDialog 
+          open={deleteModalOpen} 
+          onClose={handleCloseDeleteModal}
+          feedback={selectedFeedback}
+        />
+
+        {/* Bulk Delete Dialog */}
+        <BulkDeleteDialog
+          open={bulkDeleteDialogOpen}
+          onClose={handleBulkDeleteCancel}
+          onConfirm={handleBulkDeleteConfirm}
+          isLoading={bulkDeleteFeedbackMutation.isPending}
+          title="Bulk Delete Reviews"
+          items={paginatedFeedbacks
+            .filter(feedback => selectedFeedbackIds.includes(feedback.id))
+            .map(feedback => ({
+              id: feedback.id,
+              name: `${feedback.user.firstName} ${feedback.user.lastName}`,
+              subtitle: `Review for "${feedback.book.title}"`
+            }))
+          }
+          selectedCount={selectedFeedbackIds.length}
+          itemType="feedback"
+        />
+      </AdminLayout>
     </ProtectedRoute>
   );
 }

@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
+import { getAuthToken, setAuthToken, setUserData } from './authStorage';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -11,8 +12,8 @@ const api = axios.create({
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
+  async (config) => {
+    const token = await getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,6 +31,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
+      setUserData(null)
+      setAuthToken('')
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -69,6 +72,20 @@ export const authAPI = {
 
   logout: async () => {
     const response: AxiosResponse = await api.post('/auth/logout');
+    return response.data;
+  },
+
+  // Bulk delete users (Admin only)
+  bulkDeleteUsers: async (userIds: number[]) => {
+    const response: AxiosResponse = await api.delete('/auth/users/bulk', {
+      data: { userIds }
+    });
+    return response.data;
+  },
+
+  // Delete user data (Admin only) - Cascade deletion
+  deleteUserData: async (userId: number) => {
+    const response: AxiosResponse = await api.delete(`/auth/users/${userId}/data`);
     return response.data;
   },
 };

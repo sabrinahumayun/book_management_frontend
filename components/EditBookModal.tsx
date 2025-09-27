@@ -9,13 +9,12 @@ import {
   TextField,
   Button,
   Box,
-  Alert,
   CircularProgress,
-  AlertTitle,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { useUpdateBook } from '@/hooks/useBooks';
 import { Book, UpdateBookData } from '@/types/books';
+import { toast } from 'react-toastify';
 
 interface EditBookModalProps {
   open: boolean;
@@ -31,7 +30,6 @@ interface BookFormData {
 
 export default function EditBookModal({ open, onClose, book }: EditBookModalProps) {
   const updateBookMutation = useUpdateBook();
-  const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
 
   const {
     control,
@@ -59,7 +57,7 @@ export default function EditBookModal({ open, onClose, book }: EditBookModalProp
 
   const handleClose = () => {
     reset();
-    setShowSuccessMessage(false);
+    updateBookMutation.reset();
     onClose();
   };
 
@@ -70,11 +68,12 @@ export default function EditBookModal({ open, onClose, book }: EditBookModalProp
       { id: book.id, data: data as UpdateBookData },
       {
         onSuccess: () => {
-          setShowSuccessMessage(true);
-          setTimeout(() => {
-            handleClose();
-            setShowSuccessMessage(false);
-          }, 1500); // Show success message for 1.5 seconds before closing
+          toast.success('Book updated successfully! 🎉');
+          handleClose();
+        },
+        onError: (error: any) => {
+          const errorMessage = getErrorMessage(error);
+          toast.error(errorMessage);
         },
       }
     );
@@ -88,10 +87,8 @@ export default function EditBookModal({ open, onClose, book }: EditBookModalProp
   };
 
   // Helper function to get error message
-  const getErrorMessage = () => {
-    if (!updateBookMutation.error) return null;
-    
-    const error = updateBookMutation.error as any;
+  const getErrorMessage = (error: any) => {
+    if (!error) return 'An unexpected error occurred';
     
     // Handle validation errors from backend
     if (error?.response?.status === 400) {
@@ -175,54 +172,6 @@ export default function EditBookModal({ open, onClose, book }: EditBookModalProp
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent sx={{ p: 4 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {updateBookMutation.error && (
-              <Alert 
-                severity="error"
-                sx={{
-                  borderRadius: 2,
-                  '& .MuiAlert-message': {
-                    fontSize: '0.875rem',
-                    lineHeight: 1.4,
-                  }
-                }}
-                action={
-                  <Button
-                    color="inherit"
-                    size="small"
-                    onClick={() => updateBookMutation.reset()}
-                    sx={{ 
-                      textTransform: 'none',
-                      fontWeight: 500,
-                      '&:hover': {
-                        backgroundColor: 'rgba(255,255,255,0.1)',
-                      }
-                    }}
-                  >
-                    Dismiss
-                  </Button>
-                }
-              >
-                <AlertTitle sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                  Error Updating Book
-                </AlertTitle>
-                {getErrorMessage()}
-              </Alert>
-            )}
-            
-            {showSuccessMessage && (
-              <Alert 
-                severity="success"
-                sx={{
-                  borderRadius: 2,
-                  '& .MuiAlert-message': {
-                    fontSize: '0.875rem',
-                    lineHeight: 1.4,
-                  }
-                }}
-              >
-                Book updated successfully! 🎉
-              </Alert>
-            )}
             
             <Controller
               name="title"

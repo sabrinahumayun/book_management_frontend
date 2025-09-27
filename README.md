@@ -1,214 +1,174 @@
-# Book Management Portal - Frontend
+# 📚 Book Management Portal - Frontend
 
-A modern, responsive frontend application for a book management system with comprehensive authentication features, role-based access control, and beautiful UI design.
+A modern, responsive web application for managing books, user reviews, and administrative tasks. Built with Next.js 15, React 19, and Material-UI.
 
-## Features
-
-### Authentication System
-- **Login Page**: Modern login form with email/password validation
-- **Signup Page**: User registration with role selection (admin/user)
-- **JWT Token Management**: Secure token storage and automatic refresh
-- **Route Protection**: Middleware and component-level route protection
-- **Role-Based Access**: Different dashboards and permissions for admin vs user roles
-
-### User Interface
-- **Modern Design**: Clean, aesthetic UI built with Tailwind CSS
-- **Responsive Layout**: Mobile-first design that works on all devices
-- **Form Validation**: Real-time validation with helpful error messages
-- **Loading States**: Smooth loading indicators and user feedback
-- **Navigation**: Intuitive navigation with role-based menu items
-
-### Pages & Components
-- **Landing Page**: Beautiful homepage with feature showcase
-- **User Dashboard**: Personal dashboard for regular users
-- **Admin Dashboard**: Comprehensive admin panel with system stats
-- **Profile Page**: User profile management with edit capabilities
-- **Protected Routes**: Secure access to authenticated pages
-
-## Tech Stack
-
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **State Management**: TanStack Query (React Query)
-- **Forms**: React Hook Form
-- **HTTP Client**: Axios
-- **Icons**: Lucide React
-- **UI Components**: Custom components with Tailwind
-
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 20+ 
 - npm or yarn
-- Backend API running on port 3001
+- Docker (optional)
 
 ### Installation
 
-1. **Install dependencies**:
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd book_management_frontend
+   ```
+
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. **Set up environment variables**:
-   Create a `.env.local` file in the root directory:
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env.local
+   ```
+   Update `.env.local` with your API endpoint:
    ```env
-   NEXT_PUBLIC_API_URL=http://localhost:3001/api
+   NEXT_PUBLIC_API_URL=http://localhost:8000/api
    ```
 
-3. **Start the development server**:
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 🐳 Docker Deployment
+
+### Using Docker Compose (Recommended)
 ```bash
-npm run dev
-   ```
+# Build and run with Docker Compose
+docker-compose up -d
 
-4. **Open your browser**:
-   Navigate to `http://localhost:3000`
+# View logs
+docker-compose logs -f
 
-## Project Structure
-
-```
-book_management_frontEnd/
-├── app/                          # Next.js App Router pages
-│   ├── login/                   # Login page
-│   ├── signup/                  # Signup page
-│   ├── dashboard/               # User dashboard
-│   ├── admin/                   # Admin pages
-│   │   └── dashboard/           # Admin dashboard
-│   ├── profile/                 # User profile page
-│   ├── layout.tsx               # Root layout with auth provider
-│   └── page.tsx                 # Landing page
-├── components/                   # Reusable components
-│   ├── ui/                      # UI components
-│   │   ├── Button.tsx           # Custom button component
-│   │   └── Input.tsx            # Custom input component
-│   ├── Navigation.tsx           # Main navigation component
-│   └── ProtectedRoute.tsx       # Route protection component
-├── hooks/                        # Custom React hooks
-│   └── useAuth.ts               # Authentication hook with TanStack Query
-├── lib/                         # Utility functions
-│   ├── api.ts                   # API service layer
-│   └── utils.ts                 # Helper functions
-├── types/                       # TypeScript type definitions
-│   └── auth.ts                  # Authentication types
-└── middleware.ts                # Next.js middleware for route protection
+# Stop services
+docker-compose down
 ```
 
-## Authentication Flow
+### Using Docker directly
+```bash
+# Build the image
+docker build -t book-management-frontend .
 
-### 1. User Registration
-- Users can sign up with email, username, and password
-- Role selection (admin/user) with admin approval requirement
-- Automatic login after successful registration
+# Run the container
+docker run -p 3000:3000 book-management-frontend
+```
 
-### 2. User Login
-- Email/password authentication
-- JWT token storage in localStorage
-- Automatic redirect to appropriate dashboard based on role
+## 📋 Available Scripts
 
-### 3. Route Protection
-- Middleware-level protection for all routes
-- Component-level protection with role checking
-- Automatic redirect to login for unauthenticated users
-- Role-based redirects for unauthorized access
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start development server with Turbopack |
+| `npm run build` | Build production application |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint for code quality |
 
-### 4. User Management
-- Profile viewing and editing
-- Secure logout with token cleanup
-- Session persistence across browser refreshes
+## 🏗️ Project Structure
 
-## API Integration
+```
+book_management_frontend/
+├── app/                    # Next.js 15 App Router
+│   ├── admin/             # Admin dashboard pages
+│   ├── books/             # Book management pages
+│   ├── login/             # Authentication pages
+│   └── profile/           # User profile pages
+├── components/            # Reusable UI components
+│   ├── AddBookModal.tsx   # Book creation modal
+│   ├── AdminLayout.tsx    # Admin dashboard layout
+│   ├── Layout.tsx         # Main application layout
+│   └── ...
+├── contexts/              # React contexts
+│   └── ThemeContext.tsx   # Dark/Light mode context
+├── hooks/                 # Custom React hooks
+│   ├── useAuth.ts         # Authentication logic
+│   ├── useBooks.ts        # Book management
+│   └── useFeedback.ts     # Review management
+├── lib/                   # Utility libraries
+│   ├── api.ts            # Axios configuration
+│   ├── theme.ts          # Material-UI theme
+│   └── ...
+├── types/                 # TypeScript type definitions
+└── public/               # Static assets
+```
 
-The frontend integrates with the backend API through:
 
-- **Base URL**: Configurable via `NEXT_PUBLIC_API_URL`
-- **Authentication**: JWT tokens in Authorization headers
-- **Error Handling**: Comprehensive error handling with user feedback
-- **Request Interceptors**: Automatic token attachment
-- **Response Interceptors**: Token expiration handling
+## 🔧 Configuration
 
-### API Endpoints Used
-- `POST /auth/login` - User login
-- `POST /auth/signup` - User registration
-- `GET /auth/profile` - Get user profile
-- `PUT /auth/profile` - Update user profile
-- `POST /auth/logout` - User logout
+### Environment Variables
 
-## Role-Based Access Control
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_API_URL` | Backend API endpoint | `http://localhost:8000/api` |
+| `NODE_ENV` | Environment mode | `development` |
+| `PORT` | Server port | `3000` |
 
-### User Role
-- Access to personal dashboard
-- Book browsing and reviews
-- Profile management
-- Limited to user-specific features
 
-### Admin Role
-- Access to admin dashboard
-- User management capabilities
-- Book management system
-- Review moderation
-- System statistics and monitoring
+## 🎯 Key Features Explained
 
-## Styling & Design
+### **Smart Review System**
+The application intelligently detects if a user has already reviewed a book:
+- **First-time reviewers** see "Add Review" button
+- **Existing reviewers** see "Update Review" with their current rating/comment
+- **Real-time updates** when reviews are added/modified
 
-- **Design System**: Consistent color palette and typography
-- **Responsive Design**: Mobile-first approach with breakpoints
-- **Accessibility**: Proper ARIA labels and keyboard navigation
-- **Animations**: Smooth transitions and loading states
-- **Icons**: Lucide React icon library for consistency
+### **Bulk Operations**
+Administrators can perform bulk operations on:
+- **Users**: Bulk delete, role changes, status updates
+- **Books**: Bulk delete, category updates
+- **Reviews**: Bulk delete, moderation actions
 
-## Development
+### **Dark Mode Implementation**
+- **System preference detection** on first visit
+- **Persistent user choice** across sessions
+- **Smooth transitions** between themes
+- **Component-level theming** for consistent UI
 
-### Available Scripts
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
+### **Real-time Data**
+- **Optimistic updates** for better UX
+- **Automatic cache invalidation** after mutations
+- **Background refetching** for fresh data
+- **Error retry mechanisms** for failed requests
 
-### Code Quality
-- TypeScript for type safety
-- ESLint for code linting
-- Consistent code formatting
-- Component-based architecture
+## 🐛 Troubleshooting
 
-## Deployment
+### Common Issues
 
-1. **Build the application**:
-   ```bash
-   npm run build
-   ```
+1. **API Connection Issues**
+   - Verify `NEXT_PUBLIC_API_URL` is correct
+   - Check if backend server is running
+   - Verify CORS settings on backend
 
-2. **Start production server**:
-   ```bash
-   npm run start
-   ```
+2. **Authentication Problems**
+   - Clear browser cookies and localStorage
+   - Check JWT token expiration
+   - Verify backend authentication endpoints
 
-3. **Environment Variables**:
-   Ensure all environment variables are set in production
+3. **Build Issues**
+   - Clear `.next` folder: `rm -rf .next`
+   - Reinstall dependencies: `rm -rf node_modules && npm install`
+   - Check TypeScript errors: `npm run lint`
 
-## Security Features
+4. **Docker Issues**
+   - Check Docker daemon is running
+   - Verify port 3000 is available
+   - Check container logs: `docker-compose logs`
 
-- JWT token-based authentication
-- Secure token storage
-- Route protection middleware
-- Role-based access control
-- Input validation and sanitization
-- HTTPS enforcement in production
 
-## Browser Support
 
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
+## 👥 Stack
 
-## Contributing
+- **Frontend Development**: Next.js, React, TypeScript
+- **UI/UX Design**: Material-UI, Custom Components
+- **State Management**: TanStack Query, React Context
+- **Authentication**: JWT, Next.js Middleware
+- **Deployment**: Docker, Docker Compose
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
+---

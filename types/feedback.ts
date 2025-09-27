@@ -45,4 +45,5 @@ export interface FeedbackFilters {
   rating?: number;
   page?: number;
   limit?: number;
+  search?: string;
 }

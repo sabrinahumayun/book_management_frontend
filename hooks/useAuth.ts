@@ -3,6 +3,8 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { authAPI } from '@/lib/api';
 import { LoginCredentials, RegisterData, User, AuthResponse } from '@/types/auth';
+import { getAuthToken, getUser, setAuthToken, setUserData } from '@/lib/authStorage';
+import { toast } from 'react-toastify';
 
 // Query keys
 export const authKeys = {
@@ -11,15 +13,13 @@ export const authKeys = {
 };
 
 // Get current user from localStorage
-const getCurrentUser = (): User | null => {
-  if (typeof window === 'undefined') return null;
-  const userStr = localStorage.getItem('user');
-  return userStr ? JSON.parse(userStr) : null;
-};
-
-const getCurrentToken = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('authToken');
+const getCurrentUser = async (): Promise<User | null> => {  
+  try {
+    return await getUser();
+  } catch (error) {
+    console.error('Error parsing user data from localStorage:', error);
+    return null;
+  }
 };
 
 // Custom hook for authentication
@@ -31,11 +31,13 @@ export function useAuth() {
 
   // Initialize user from localStorage on client side
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const currentUser = getCurrentUser();
+    const fetchUser = async () => {
+      const currentUser = await getCurrentUser();
       setUser(currentUser);
+      setUserData(currentUser)
       setIsInitialized(true);
     }
+    fetchUser();
   }, []);
 
   // Get current user query (only for refreshing data)
@@ -47,45 +49,41 @@ export function useAuth() {
         return null;
       }
       
-      const token = getCurrentToken();
+      const token = await getAuthToken();
       if (!token) return null;
       
       try {
         const response = await authAPI.getProfile();
         return response.user || null;
       } catch (error) {
-        // Token is invalid, clear storage
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        setUser(null);
         return null;
       }
     },
-    enabled: isInitialized && !!user && !!getCurrentToken(), // Only run if we have a user, are initialized, and have a token
+    enabled: isInitialized && !!user, // Only run if we have a user, are initialized, and have a token
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
     refetchOnWindowFocus: false,
   });
 
-  // Update user when refreshed data comes in
-  useEffect(() => {
-    if (refreshedUser !== undefined) {
-      setUser(refreshedUser);
-    }
-  }, [refreshedUser]);
-
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginCredentials) => authAPI.login(credentials),
     onSuccess: (response: AuthResponse) => {
-      localStorage.setItem('authToken', response.access_token);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      setAuthToken(response.access_token);
       setUser(response.user);
+      setUserData(response.user)
       queryClient.setQueryData(authKeys.profile(), response.user);
-      router.push('/books');
+      
+      // Show success toast
+      toast.success(`Welcome back, ${response.user.firstName}! 🎉`);
+      
+      // Redirect based on user role
+      const redirectPath = response.user.role === 'admin' ? '/admin/dashboard' : '/books';
+      router.push(redirectPath);
     },
     onError: (error: any) => {
       console.error('Login failed:', error);
+      toast.error(error)
     },
   });
 
@@ -93,11 +91,17 @@ export function useAuth() {
   const registerMutation = useMutation({
     mutationFn: (userData: RegisterData) => authAPI.register(userData),
     onSuccess: (response: AuthResponse) => {
-      localStorage.setItem('authToken', response.access_token);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      setAuthToken(response.access_token)
       setUser(response.user);
+      setUserData(response.user)
       queryClient.setQueryData(authKeys.profile(), response.user);
-      router.push('/books');
+      
+      // Show success toast
+      toast.success(`Welcome to Book Portal, ${response.user.firstName}! 🚀`);
+      
+      // Redirect based on user role
+      const redirectPath = response.user.role === 'admin' ? '/admin/dashboard' : '/books';
+      router.push(redirectPath);
     },
     onError: (error: any) => {
       console.error('Registration failed:', error);
@@ -109,9 +113,12 @@ export function useAuth() {
     mutationFn: (userData: Partial<User>) => authAPI.updateProfile(userData),
     onSuccess: (response) => {
       const updatedUser = { ...user, ...response.user };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
+      setUserData(updatedUser)
       queryClient.setQueryData(authKeys.profile(), updatedUser);
+      
+      // Show success toast
+      toast.success('Profile updated successfully! ✨');
     },
     onError: (error: any) => {
       console.error('Profile update failed:', error);
@@ -120,10 +127,13 @@ export function useAuth() {
 
   // Logout function
   const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
     setUser(null);
+    setAuthToken('')
     queryClient.clear();
+    
+    // Show success toast
+    toast.success('Logged out successfully! 👋');
+    
     router.push('/login');
   };
 

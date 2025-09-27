@@ -32,6 +32,7 @@ import {
   MenuItem,
   Tooltip,
   CircularProgress,
+  Checkbox,
 } from '@mui/material';
 import {
   Add,
@@ -44,9 +45,11 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useForm, Controller } from 'react-hook-form';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import Navigation from '@/components/Navigation';
-import { useBooks, useCreateBook, useUpdateBook, useDeleteBook } from '@/hooks/useBooks';
+import AdminLayout from '@/components/AdminLayout';
+import { useBooks, useCreateBook, useUpdateBook, useDeleteBook, useBulkDeleteBooks } from '@/hooks/useBooks';
 import { Book, CreateBookData, UpdateBookData, BookFilters } from '@/types/books';
+import BulkDeleteDialog from '@/components/BulkDeleteDialog';
+import { toast } from 'react-toastify';
 
 interface BookFormData {
   title: string;
@@ -62,11 +65,15 @@ export default function AdminBooksPage() {
     limit: 10,
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchType, setSearchType] = useState<'title' | 'author' | 'isbn' | 'createdBy'>('title');
+  const [selectedBookIds, setSelectedBookIds] = useState<number[]>([]);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   const { data: booksResponse, isLoading, error } = useBooks(filters);
   const createBookMutation = useCreateBook();
   const updateBookMutation = useUpdateBook();
   const deleteBookMutation = useDeleteBook();
+  const bulkDeleteBooksMutation = useBulkDeleteBooks();
 
   const {
     control,
@@ -129,15 +136,41 @@ export default function AdminBooksPage() {
   };
 
   const handleSearch = () => {
-    setFilters(prev => ({
-      ...prev,
-      title: searchTerm || undefined,
+    const searchFilters: BookFilters = {
+      ...filters,
       page: 1,
-    }));
+    };
+
+    // Clear all search fields first
+    delete searchFilters.title;
+    delete searchFilters.author;
+    delete searchFilters.isbn;
+    delete searchFilters.createdBy;
+
+    // Set the appropriate search field based on searchType
+    if (searchTerm) {
+      switch (searchType) {
+        case 'title':
+          searchFilters.title = searchTerm;
+          break;
+        case 'author':
+          searchFilters.author = searchTerm;
+          break;
+        case 'isbn':
+          searchFilters.isbn = searchTerm;
+          break;
+        case 'createdBy':
+          searchFilters.createdBy = searchTerm;
+          break;
+      }
+    }
+
+    setFilters(searchFilters);
   };
 
   const handleClearFilters = () => {
     setSearchTerm('');
+    setSearchType('title');
     setFilters({
       page: 1,
       limit: 10,
@@ -151,13 +184,55 @@ export default function AdminBooksPage() {
     }));
   };
 
+  // Bulk delete handlers
+  const handleSelectBook = (bookId: number) => {
+    setSelectedBookIds(prev => 
+      prev.includes(bookId) 
+        ? prev.filter(id => id !== bookId)
+        : [...prev, bookId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedBookIds.length === books.length) {
+      setSelectedBookIds([]);
+    } else {
+      setSelectedBookIds(books.map(book => book.id));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedBookIds.length === 0) {
+      toast.error('No books selected for deletion');
+      return;
+    }
+    setBulkDeleteDialogOpen(true);
+  };
+
+  const handleBulkDeleteConfirm = () => {
+    bulkDeleteBooksMutation.mutate(selectedBookIds, {
+      onSuccess: () => {
+        toast.success(`Successfully deleted ${selectedBookIds.length} books! 🗑️`);
+        setSelectedBookIds([]);
+        setBulkDeleteDialogOpen(false);
+      },
+      onError: (error: any) => {
+        const errorMessage = error?.response?.data?.message || 'Failed to delete books';
+        toast.error(errorMessage);
+      },
+    });
+  };
+
+  const handleBulkDeleteCancel = () => {
+    setBulkDeleteDialogOpen(false);
+  };
+
   const books = booksResponse?.data || [];
   const totalPages = booksResponse?.totalPages || 0;
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }} suppressHydrationWarning>
-        <Navigation />
+      <AdminLayout>
         
         <Container maxWidth="xl" sx={{ py: 4 }}>
           {/* Header */}
@@ -179,6 +254,18 @@ export default function AdminBooksPage() {
               >
                 Add Book
               </Button>
+              
+              {selectedBookIds.length > 0 && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={handleBulkDelete}
+                  sx={{ minWidth: 140 }}
+                >
+                  Delete ({selectedBookIds.length})
+                </Button>
+              )}
             </Box>
           </Box>
 
@@ -186,8 +273,21 @@ export default function AdminBooksPage() {
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                <FormControl sx={{ minWidth: 120 }}>
+                  <InputLabel>Search By</InputLabel>
+                  <Select
+                    value={searchType}
+                    label="Search By"
+                    onChange={(e) => setSearchType(e.target.value as 'title' | 'author' | 'isbn' | 'createdBy')}
+                  >
+                    <MenuItem value="title">Title</MenuItem>
+                    <MenuItem value="author">Author</MenuItem>
+                    <MenuItem value="isbn">ISBN</MenuItem>
+                    <MenuItem value="createdBy">Created By</MenuItem>
+                  </Select>
+                </FormControl>
                 <TextField
-                  placeholder="Search by title..."
+                  placeholder={`Search by ${searchType}...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   InputProps={{
@@ -247,6 +347,13 @@ export default function AdminBooksPage() {
                     <Table>
                       <TableHead>
                         <TableRow>
+                          <TableCell padding="checkbox">
+                            <Checkbox
+                              checked={selectedBookIds.length === books.length && books.length > 0}
+                              indeterminate={selectedBookIds.length > 0 && selectedBookIds.length < books.length}
+                              onChange={handleSelectAll}
+                            />
+                          </TableCell>
                           <TableCell>Title</TableCell>
                           <TableCell>Author</TableCell>
                           <TableCell>ISBN</TableCell>
@@ -258,6 +365,12 @@ export default function AdminBooksPage() {
                       <TableBody>
                         {books.map((book) => (
                           <TableRow key={book.id} hover>
+                            <TableCell padding="checkbox">
+                              <Checkbox
+                                checked={selectedBookIds.includes(book.id)}
+                                onChange={() => handleSelectBook(book.id)}
+                              />
+                            </TableCell>
                             <TableCell>
                               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
@@ -424,7 +537,26 @@ export default function AdminBooksPage() {
             </DialogActions>
           </form>
         </Dialog>
-      </Box>
+
+        {/* Bulk Delete Dialog */}
+        <BulkDeleteDialog
+          open={bulkDeleteDialogOpen}
+          onClose={handleBulkDeleteCancel}
+          onConfirm={handleBulkDeleteConfirm}
+          isLoading={bulkDeleteBooksMutation.isPending}
+          title="Bulk Delete Books"
+          items={books
+            .filter(book => selectedBookIds.includes(book.id))
+            .map(book => ({
+              id: book.id,
+              name: book.title,
+              subtitle: `by ${book.author}`
+            }))
+          }
+          selectedCount={selectedBookIds.length}
+          itemType="books"
+        />
+      </AdminLayout>
     </ProtectedRoute>
   );
 }

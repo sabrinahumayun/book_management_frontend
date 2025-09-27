@@ -1,217 +1,192 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import Navigation from '@/components/Navigation';
+import AdminLayout from '@/components/AdminLayout';
+import AddBookModal from '@/components/AddBookModal';
 import {
   Box,
   Container,
   Typography,
   Card,
   CardContent,
-  CardActions,
-  Button,
-  Chip,
   Avatar,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   Divider,
-  Paper,
   Alert,
+  Chip,
+  LinearProgress,
 } from '@mui/material';
 import {
   LibraryBooks,
   People,
   RateReview,
-  Shield,
   TrendingUp,
   Warning,
   Add,
-  Settings,
+  Person,
+  LibraryBooks as BookOpen,
+  Star as MessageSquare,
+  Dashboard,
 } from '@mui/icons-material';
 import { useAuth } from '@/hooks/useAuth';
+import { useBooks } from '@/hooks/useBooks';
+import { useUsers } from '@/hooks/useUsers';
+import { useFeedback } from '@/hooks/useFeedback';
 
 export default function AdminDashboard() {
   const { isLoading } = useAuth();
+  const [addBookOpen, setAddBookOpen] = useState(false);
+
+  // Fetch data for dashboard
+  const { data: booksResponse, isLoading: booksLoading } = useBooks({ page: 1, limit: 50 });
+  const { data: usersResponse, isLoading: usersLoading } = useUsers({});
+  const { data: feedbackResponse, isLoading: feedbackLoading } = useFeedback({ page: 1, limit: 50 });
+
+  const totalBooks = booksResponse?.total || 0;
+  const totalUsers = usersResponse?.total || 0;
+  const totalFeedback = feedbackResponse?.total || 0;
+  const recentBooks = booksResponse?.data?.slice(0, 5) || [];
+  const recentFeedback = feedbackResponse?.data?.slice(0, 5) || [];
+
+  const handleOpenAddBook = () => {
+    setAddBookOpen(true);
+  };
+
+  const handleCloseAddBook = () => {
+    setAddBookOpen(false);
+  };
+
 
   if (isLoading) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Box sx={{ width: 40, height: 40, border: '4px solid #f3f3f3', borderTop: '4px solid #1976d2', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <LinearProgress sx={{ width: '100%' }} />
       </Box>
     );
   }
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }} suppressHydrationWarning>
-        <Navigation />
-        
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <AdminLayout onAddBook={handleOpenAddBook}>
+        <Container maxWidth="xl" sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
           {/* Header */}
-          <Box sx={{ mb: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                <Shield />
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ bgcolor: 'primary.main', mr: 1.5, width: 40, height: 40 }}>
+                <Dashboard />
               </Avatar>
               <Box>
-                <Typography variant="h3" component="h1" fontWeight="bold">
+                <Typography variant="h4" component="h1" fontWeight="bold">
                   Admin Dashboard
                 </Typography>
-                <Typography variant="h6" color="text.secondary">
+                <Typography variant="body1" color="text.secondary">
                   Manage books, users, and platform content
                 </Typography>
               </Box>
             </Box>
           </Box>
 
-          {/* Stats Cards */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                      <LibraryBooks />
-                    </Avatar>
+          {/* Key Metrics */}
+          <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+            <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
+              <Card sx={{ 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box>
-                      <Typography variant="h4" component="div" fontWeight="bold">
-                        1,247
+                      <Typography variant="h4" fontWeight="bold">
+                        {booksLoading ? '...' : totalBooks.toLocaleString()}
                       </Typography>
-                      <Typography color="text.secondary">
+                      <Typography variant="caption" sx={{ opacity: 0.9 }}>
                         Total Books
                       </Typography>
                     </Box>
+                    <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 32, height: 32 }}>
+                      <LibraryBooks />
+                    </Avatar>
                   </Box>
                 </CardContent>
               </Card>
             </Box>
 
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                      <People />
-                    </Avatar>
+            <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
+              <Card sx={{ 
+                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                color: 'white',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box>
-                      <Typography variant="h4" component="div" fontWeight="bold">
-                        2,341
+                      <Typography variant="h4" fontWeight="bold">
+                        {usersLoading ? '...' : totalUsers.toLocaleString()}
                       </Typography>
-                      <Typography color="text.secondary">
+                      <Typography variant="caption" sx={{ opacity: 0.9 }}>
                         Active Users
                       </Typography>
                     </Box>
+                    <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 32, height: 32 }}>
+                      <People />
+                    </Avatar>
                   </Box>
                 </CardContent>
               </Card>
             </Box>
 
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                      <RateReview />
-                    </Avatar>
+            <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
+              <Card sx={{ 
+                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                color: 'white',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box>
-                      <Typography variant="h4" component="div" fontWeight="bold">
-                        23
+                      <Typography variant="h4" fontWeight="bold">
+                        {feedbackLoading ? '...' : totalFeedback.toLocaleString()}
                       </Typography>
-                      <Typography color="text.secondary">
-                        Pending Reviews
+                      <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                        Total Reviews
                       </Typography>
                     </Box>
+                    <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 32, height: 32 }}>
+                      <RateReview />
+                    </Avatar>
                   </Box>
                 </CardContent>
               </Card>
             </Box>
 
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                      <TrendingUp />
-                    </Avatar>
+            <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
+              <Card sx={{ 
+                background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                color: 'white',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box>
-                      <Typography variant="h4" component="div" fontWeight="bold">
+                      <Typography variant="h4" fontWeight="bold">
                         +12.5%
                       </Typography>
-                      <Typography color="text.secondary">
+                      <Typography variant="caption" sx={{ opacity: 0.9 }}>
                         Monthly Growth
                       </Typography>
                     </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-            {/* Quick Actions */}
-            <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h5" component="h2" gutterBottom>
-                    Quick Actions
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<Add />}
-                      fullWidth
-                      sx={{ justifyContent: 'flex-start' }}
-                    >
-                      Add New Book
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<People />}
-                      fullWidth
-                      sx={{ justifyContent: 'flex-start' }}
-                    >
-                      Manage Users
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<RateReview />}
-                      fullWidth
-                      sx={{ justifyContent: 'flex-start' }}
-                    >
-                      Moderate Reviews
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
-
-            {/* System Alerts */}
-            <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h5" component="h2" gutterBottom>
-                    System Alerts
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <Alert severity="warning" icon={<Warning />}>
-                      <Typography variant="body2" fontWeight="bold">
-                        High Server Load
-                      </Typography>
-                      <Typography variant="caption">
-                        CPU usage at 85%
-                      </Typography>
-                    </Alert>
-                    <Alert severity="info" icon={<RateReview />}>
-                      <Typography variant="body2" fontWeight="bold">
-                        New Reviews
-                      </Typography>
-                      <Typography variant="caption">
-                        23 reviews pending approval
-                      </Typography>
-                    </Alert>
+                    <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 32, height: 32 }}>
+                      <TrendingUp />
+                    </Avatar>
                   </Box>
                 </CardContent>
               </Card>
@@ -219,79 +194,98 @@ export default function AdminDashboard() {
           </Box>
 
           {/* Recent Activity */}
-          <Card>
-            <CardContent>
-              <Typography variant="h5" component="h2" gutterBottom>
-                Recent Activity
-              </Typography>
-              <List>
-                <ListItem>
-                  <ListItemIcon>
-                    <Avatar sx={{ bgcolor: 'success.light' }}>
-                      <People />
-                    </Avatar>
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Box>
-                        <Typography variant="body2" component="span" fontWeight="bold">
-                          New user registered:
-                        </Typography>
-                        <Typography variant="body2" component="span" sx={{ ml: 1 }}>
-                          john_doe
-                        </Typography>
-                      </Box>
-                    }
-                    secondary="2 hours ago"
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemIcon>
-                    <Avatar sx={{ bgcolor: 'primary.light' }}>
-                      <LibraryBooks />
-                    </Avatar>
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Box>
-                        <Typography variant="body2" component="span" fontWeight="bold">
-                          New book added:
-                        </Typography>
-                        <Typography variant="body2" component="span" sx={{ ml: 1 }}>
-                          "The Midnight Library"
-                        </Typography>
-                      </Box>
-                    }
-                    secondary="4 hours ago"
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem>
-                    <ListItemIcon>
-                      <Avatar sx={{ bgcolor: 'warning.light' }}>
-                        <RateReview />
-                      </Avatar>
-                    </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Box>
-                        <Typography variant="body2" component="span" fontWeight="bold">
-                          Review reported:
-                        </Typography>
-                        <Typography variant="body2" component="span" sx={{ ml: 1 }}>
-                          Inappropriate content
-                        </Typography>
-                      </Box>
-                    }
-                    secondary="6 hours ago"
-                  />
-                </ListItem>
-              </List>
-            </CardContent>
-          </Card>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ flex: '1 1 300px', minWidth: 300 }}>
+              <Card sx={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Typography variant="h6" fontWeight="600" gutterBottom>
+                    Recent Books
+                  </Typography>
+                  <List sx={{ py: 0 }}>
+                    {recentBooks.map((book, index) => (
+                      <React.Fragment key={book.id}>
+                        <ListItem sx={{ px: 0, py: 0.5 }}>
+                          <ListItemIcon sx={{ minWidth: 32 }}>
+                            <Avatar sx={{ bgcolor: 'primary.main', width: 24, height: 24 }}>
+                              <BookOpen />
+                            </Avatar>
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={book.title}
+                            secondary={`by ${book.author} • ${new Date(book.createdAt).toLocaleDateString()}`}
+                            primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
+                            secondaryTypographyProps={{ variant: 'caption' }}
+                          />
+                        </ListItem>
+                        {index < recentBooks.length - 1 && <Divider />}
+                      </React.Fragment>
+                    ))}
+                  </List>
+                </CardContent>
+              </Card>
+            </Box>
+
+            <Box sx={{ flex: '1 1 300px', minWidth: 300 }}>
+              <Card sx={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Typography variant="h6" fontWeight="600" gutterBottom>
+                    Recent Activity
+                  </Typography>
+                  <List sx={{ py: 0 }}>
+                    <ListItem sx={{ px: 0, py: 0.5 }}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <Avatar sx={{ bgcolor: 'success.main', width: 24, height: 24 }}>
+                          <Person />
+                        </Avatar>
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="New user registered: john_doe"
+                        secondary="2 hours ago"
+                        primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
+                        secondaryTypographyProps={{ variant: 'caption' }}
+                      />
+                    </ListItem>
+                    <Divider />
+                    <ListItem sx={{ px: 0, py: 0.5 }}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <Avatar sx={{ bgcolor: 'primary.main', width: 24, height: 24 }}>
+                          <BookOpen />
+                        </Avatar>
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="New book added: 'The Midnight Library'"
+                        secondary="4 hours ago"
+                        primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
+                        secondaryTypographyProps={{ variant: 'caption' }}
+                      />
+                    </ListItem>
+                    <Divider />
+                    <ListItem sx={{ px: 0, py: 0.5 }}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <Avatar sx={{ bgcolor: 'warning.main', width: 24, height: 24 }}>
+                          <Warning />
+                        </Avatar>
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Review reported: Inappropriate content"
+                        secondary="6 hours ago"
+                        primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
+                        secondaryTypographyProps={{ variant: 'caption' }}
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Box>
+          </Box>
         </Container>
-      </Box>
+
+        {/* Add Book Modal */}
+        <AddBookModal 
+          open={addBookOpen} 
+          onClose={handleCloseAddBook}
+        />
+      </AdminLayout>
     </ProtectedRoute>
   );
 }

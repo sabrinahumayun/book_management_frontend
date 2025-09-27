@@ -1,38 +1,39 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getAuthToken, getUser } from './lib/authStorage';
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get('authToken')?.value;
+export async function middleware(request: NextRequest) {
+  const token = await getAuthToken();
+  const user = await getUser();
   const { pathname } = request.nextUrl;
 
-  // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/signup', '/'];
-  
-  // Admin routes that require admin role
-  const adminRoutes = ['/admin'];
+  const publicRoutes = ['/login', '/signup'];
+  const adminRoutes = ['/admin']
 
-  // Check if the current path is a public route
+  console.log(token)
+
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-  
-  // Check if the current path is an admin route
-  const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
+  const isAuthenticated = !!token;
 
-  // If it's a public route, allow access
-  if (isPublicRoute) {
-    return NextResponse.next();
+  // If user is authenticated and tries to access login/signup, redirect to app home (e.g., /books)
+  if (isAuthenticated && isPublicRoute) {
+    if (user?.role === 'admin') {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+    return NextResponse.redirect(new URL('/books', request.url));
+  }
+  
+
+  if (isAuthenticated && user?.role !== 'admin' && adminRoutes.some(route => pathname.startsWith(route))) {
+    return NextResponse.redirect(new URL('/books', request.url)); 
   }
 
-  // If no token and trying to access protected route, redirect to login
-  if (!token) {
+  // If user is NOT authenticated and tries to access protected routes, redirect to login
+  if (!isAuthenticated && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // For admin routes, we'll let the client-side handle role checking
-  // since we can't easily decode JWT in middleware without additional setup
-  if (isAdminRoute) {
-    return NextResponse.next();
-  }
-
+  // Otherwise, allow the request
   return NextResponse.next();
 }
 

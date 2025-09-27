@@ -26,6 +26,7 @@ import {
   Dashboard,
 } from '@mui/icons-material';
 import { useAuth } from '@/hooks/useAuth';
+import DarkModeToggle from '@/components/DarkModeToggle';
 
 export default function Home() {
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -35,15 +36,32 @@ export default function Home() {
   if (isLoading) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Box sx={{ width: 40, height: 40, border: '4px solid #f3f3f3', borderTop: '4px solid #1976d2', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <Box sx={{ 
+          width: 40, 
+          height: 40, 
+          border: (theme) => `4px solid ${theme.palette.mode === 'dark' ? '#475569' : '#f3f3f3'}`, 
+          borderTop: (theme) => `4px solid ${theme.palette.primary.main}`, 
+          borderRadius: '50%', 
+          animation: 'spin 1s linear infinite' 
+        }} />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+    <Box sx={{ 
+      minHeight: '100vh', 
+      background: (theme) => theme.palette.mode === 'dark' 
+        ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
+        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    }}>
       {/* Navigation */}
-      <AppBar position="static" elevation={0} sx={{ bgcolor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)' }}>
+      <AppBar position="static" elevation={0} sx={{ 
+        bgcolor: (theme) => theme.palette.mode === 'dark' 
+          ? 'rgba(30, 41, 59, 0.9)' 
+          : 'rgba(255, 255, 255, 0.9)', 
+        backdropFilter: 'blur(10px)' 
+      }}>
         <Toolbar>
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
                 <LibraryBooks sx={{ color: 'primary.main', mr: 1 }} />
@@ -51,7 +69,8 @@ export default function Home() {
               Book Portal
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <DarkModeToggle />
             {isAuthenticated ? (
               <>
                 <Link href="/books" style={{ textDecoration: 'none' }}>
@@ -94,7 +113,7 @@ export default function Home() {
       <Container maxWidth="lg" sx={{ py: 10, textAlign: 'center' }}>
         <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom sx={{ color: 'white', mb: 3 }}>
           Manage Your{' '}
-          <Typography component="span" variant="h2" sx={{ color: '#42a5f5' }}>
+          <Typography component="span" variant="h2" sx={{ color: (theme) => theme.palette.mode === 'dark' ? '#8fa4f3' : '#42a5f5' }}>
             Book Collection
           </Typography>
         </Typography>
@@ -178,7 +197,7 @@ export default function Home() {
       </Container>
 
       {/* Features Section */}
-      <Box sx={{ bgcolor: 'white', py: 10 }}>
+      <Box sx={{ bgcolor: (theme) => theme.palette.background.default, py: 10 }}>
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 8 }}>
             <Typography variant="h3" component="h2" fontWeight="bold" gutterBottom>
@@ -290,7 +309,12 @@ export default function Home() {
       </Box>
 
       {/* CTA Section */}
-      <Box sx={{ bgcolor: 'primary.main', py: 8 }}>
+      <Box sx={{ 
+        bgcolor: (theme) => theme.palette.mode === 'dark' 
+          ? 'linear-gradient(135deg, #8fa4f3 0%, #9c7bb8 100%)'
+          : 'primary.main', 
+        py: 8 
+      }}>
         <Container maxWidth="md" sx={{ textAlign: 'center' }}>
           {isAuthenticated ? (
             <>

@@ -20,10 +20,6 @@ export default function ProtectedRoute({
 
   useEffect(() => {
     if (!isLoading) {
-      if (!isAuthenticated) {
-        router.push(fallbackPath);
-        return;
-      }
 
       if (requiredRole && user?.role !== requiredRole) {
         // Redirect to appropriate dashboard based on user role
@@ -42,9 +38,6 @@ export default function ProtectedRoute({
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
 
   if (requiredRole && user?.role !== requiredRole) {
     return null;

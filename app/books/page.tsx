@@ -37,6 +37,9 @@ import {
   // Add,
   // Refresh as ClearIcon,
   Home,
+  Apps as CardViewIcon,
+  List as ListViewIcon,
+  Add as LoadMoreIcon,
 } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -78,43 +81,86 @@ export default function BooksPage() {
   const [tabValue, setTabValue] = useState(0);
   const [filters, setFilters] = useState<BookFilters>({
     page: 1,
-    limit: 12,
+    limit: 16,
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const [addBookModalOpen, setAddBookModalOpen] = useState(false);
   const [editBookModalOpen, setEditBookModalOpen] = useState(false);
   const [deleteBookDialogOpen, setDeleteBookDialogOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [loadedItems, setLoadedItems] = useState(16); // Track how many items are currently loaded
+  const [useLoadMore, setUseLoadMore] = useState(false); // Toggle between pagination and load more
 
-  // Get user's own books
-  const { data: myBooksResponse, isLoading: myBooksLoading, error: myBooksError } = useMyBooks(filters);
+  // Get user's own books without search filters for frontend filtering
+  const { data: myBooksResponse, isLoading: myBooksLoading, error: myBooksError } = useMyBooks({ page: 1, limit: 100 });
 
-  // Get all books (including user's own books)
-  const { data: allBooksResponse, isLoading: allBooksLoading, error: allBooksError } = useBooks(filters);
+  // Get all books without search filters for frontend filtering
+  const { data: allBooksResponse, isLoading: allBooksLoading, error: allBooksError } = useBooks({ page: 1, limit: 100 });
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
     setSearchTerm('');
     setFilters({
       page: 1,
-      limit: 12,
+      limit: 16,
     });
+    setLoadedItems(16);
   };
 
+  // Frontend filtering logic
+  const allBooks = allBooksResponse?.data || [];
+  const myBooks = myBooksResponse?.data || [];
+  
+  const filteredAllBooks = allBooks.filter(book => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      book.title.toLowerCase().includes(searchLower) ||
+      book.author.toLowerCase().includes(searchLower) ||
+      book.isbn.toLowerCase().includes(searchLower)
+    );
+  });
+  
+  const filteredMyBooks = myBooks.filter(book => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      book.title.toLowerCase().includes(searchLower) ||
+      book.author.toLowerCase().includes(searchLower) ||
+      book.isbn.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Filter out user's own books from filtered all books for the "Browse Books" tab
+  const filteredOtherBooks = filteredAllBooks.filter(book => book.createdBy !== user?.id);
+
   const handleSearch = () => {
-    setFilters(prev => ({
-      ...prev,
-      title: searchTerm || undefined,
-      page: 1,
-    }));
+    // No API call needed - just reset to first page for frontend filtering
+    setFilters(prev => ({ ...prev, page: 1 }));
+    setLoadedItems(filters.limit || 16);
   };
 
   const handleClearFilters = () => {
     setSearchTerm('');
     setFilters({
       page: 1,
-      limit: 12,
+      limit: 16,
     });
+    setLoadedItems(16);
+  };
+
+  const handleLoadMore = () => {
+    setLoadedItems(prev => prev + (filters.limit || 16));
+  };
+
+  const handleViewModeChange = (mode: 'pagination' | 'loadmore') => {
+    setUseLoadMore(mode === 'loadmore');
+    if (mode === 'loadmore') {
+      setLoadedItems(filters.limit || 16);
+    } else {
+      setFilters(prev => ({ ...prev, page: 1 }));
+    }
   };
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
@@ -142,13 +188,203 @@ export default function BooksPage() {
     setAddBookModalOpen(true);
   };
 
-  const myBooks = myBooksResponse?.data || [];
-  const allBooks = allBooksResponse?.data || [];
-  const myBooksTotalPages = myBooksResponse?.totalPages || 0;
-  const allBooksTotalPages = allBooksResponse?.totalPages || 0;
+  // Calculate pagination for filtered results
+  const itemsPerPage = filters.limit || 16;
+  const myBooksTotalPages = Math.ceil(filteredMyBooks.length / itemsPerPage);
+  const otherBooksTotalPages = Math.ceil(filteredOtherBooks.length / itemsPerPage);
   
-  // Filter out user's own books from all books for the "Browse Books" tab
-  const otherBooks = allBooks.filter(book => book.createdBy !== user?.id);
+  // Paginate filtered results based on mode
+  let paginatedMyBooks, paginatedOtherBooks;
+  
+  if (useLoadMore) {
+    // Load more mode: show items up to loadedItems
+    paginatedMyBooks = filteredMyBooks.slice(0, loadedItems);
+    paginatedOtherBooks = filteredOtherBooks.slice(0, loadedItems);
+  } else {
+    // Pagination mode: use page-based slicing
+    const startIndex = ((filters.page || 1) - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    paginatedMyBooks = filteredMyBooks.slice(startIndex, endIndex);
+    paginatedOtherBooks = filteredOtherBooks.slice(startIndex, endIndex);
+  }
+  
+  // Check if there are more items to load
+  const hasMoreMyBooks = loadedItems < filteredMyBooks.length;
+  const hasMoreOtherBooks = loadedItems < filteredOtherBooks.length;
+
+  const renderBookListItem = (book: any, isMyBook: boolean = false) => (
+    <Card
+      key={book.id}
+      sx={{
+        mb: 2,
+        borderRadius: 3,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        background: (theme) => theme.palette.mode === 'dark' 
+          ? 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)'
+          : 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+        boxShadow: (theme) => theme.palette.mode === 'dark' 
+          ? '0 4px 20px rgba(0,0,0,0.3)'
+          : '0 4px 20px rgba(0,0,0,0.08)',
+        border: (theme) => theme.palette.mode === 'dark' 
+          ? '1px solid rgba(255,255,255,0.1)'
+          : '1px solid rgba(0,0,0,0.05)',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: (theme) => theme.palette.mode === 'dark' 
+            ? '0 8px 32px rgba(0,0,0,0.4)'
+            : '0 8px 32px rgba(0,0,0,0.15)',
+        },
+      }}
+      onClick={() => router.push(`/books/${book.id}`)}
+    >
+      <Box sx={{ display: 'flex', p: 4 }}>
+        {/* Book Cover */}
+        <Box
+          sx={{
+            width: 100,
+            height: 100,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: 3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mr: 3,
+            flexShrink: 0,
+          }}
+        >
+          <LibraryBooks sx={{ fontSize: 48, color: 'white' }} />
+        </Box>
+
+        {/* Book Info */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              fontWeight: 600, 
+              mb: 1.5,
+              color: 'text.primary',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {book.title}
+          </Typography>
+          
+          <Typography 
+            variant="body1" 
+            color="text.secondary" 
+            sx={{ mb: 2, fontWeight: 500 }}
+          >
+            by {book.author}
+          </Typography>
+          
+          <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
+            <Chip
+              label={`ISBN: ${book.isbn}`}
+              size="medium"
+              sx={{
+                backgroundColor: 'primary.light',
+                color: 'white',
+                fontSize: '0.8rem',
+                height: 28,
+              }}
+            />
+          </Box>
+          
+          {/* Creator Info */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            p: 1.5,
+            backgroundColor: 'rgba(0,0,0,0.02)',
+            borderRadius: 2,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}>
+                <Person sx={{ fontSize: 14 }} />
+              </Avatar>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                {book.creator?.firstName || 'Unknown'} {book.creator?.lastName || 'User'}
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+              {new Date(book.createdAt).toLocaleDateString()}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Actions */}
+        <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+          {isMyBook && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="Edit Book">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditBook(book);
+                  }}
+                  sx={{
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: 'primary.dark',
+                    },
+                  }}
+                >
+                  <Edit fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete Book">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteBook(book);
+                  }}
+                  sx={{
+                    backgroundColor: 'error.main',
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: 'error.dark',
+                    },
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
+          
+          <Button
+            variant="contained"
+            size="medium"
+            sx={{
+              ml: 2,
+              borderRadius: 3,
+              px: 4,
+              py: 1.5,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+              },
+              transition: 'all 0.2s ease',
+            }}
+          >
+            View Details
+          </Button>
+        </Box>
+      </Box>
+    </Card>
+  );
 
   const renderBookCard = (book: any, isMyBook: boolean = false) => (
     <Card
@@ -161,13 +397,21 @@ export default function BooksPage() {
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         borderRadius: 4,
         overflow: 'hidden',
-        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        border: '1px solid rgba(255,255,255,0.2)',
+        background: (theme) => theme.palette.mode === 'dark' 
+          ? 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)'
+          : 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+        boxShadow: (theme) => theme.palette.mode === 'dark' 
+          ? '0 4px 20px rgba(0,0,0,0.3)'
+          : '0 4px 20px rgba(0,0,0,0.08)',
+        border: (theme) => theme.palette.mode === 'dark' 
+          ? '1px solid rgba(255,255,255,0.1)'
+          : '1px solid rgba(255,255,255,0.2)',
         backdropFilter: 'blur(10px)',
         '&:hover': {
           transform: 'translateY(-12px) scale(1.02)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          boxShadow: (theme) => theme.palette.mode === 'dark' 
+            ? '0 20px 60px rgba(0,0,0,0.5)'
+            : '0 20px 60px rgba(0,0,0,0.2)',
           '& .book-cover': {
             transform: 'scale(1.1) rotate(5deg)',
           },
@@ -219,10 +463,10 @@ export default function BooksPage() {
           className="book-actions"
           sx={{
             position: 'absolute',
-            top: 12,
-            right: 12,
+            top: 16,
+            right: 16,
             display: 'flex',
-            gap: 1,
+            gap: 1.5,
             opacity: 0,
             transform: 'translateY(-10px)',
             transition: 'all 0.3s ease',
@@ -232,19 +476,24 @@ export default function BooksPage() {
             <>
               <Tooltip title="Edit Book">
                 <IconButton
-                  size="small"
+                  size="medium"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleEditBook(book);
                   }}
                   sx={{
-                    backgroundColor: 'rgba(255,255,255,0.9)',
+                    backgroundColor: 'rgba(255,255,255,0.95)',
                     color: 'primary.main',
+                    width: 40,
+                    height: 40,
+                    p: 1,
                     '&:hover': {
                       backgroundColor: 'white',
                       transform: 'scale(1.1)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                     },
                     boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                    border: '1px solid rgba(255,255,255,0.2)',
                   }}
                 >
                   <Edit fontSize="small" />
@@ -252,19 +501,24 @@ export default function BooksPage() {
               </Tooltip>
               <Tooltip title="Delete Book">
                 <IconButton
-                  size="small"
+                  size="medium"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteBook(book);
                   }}
                   sx={{
-                    backgroundColor: 'rgba(255,255,255,0.9)',
+                    backgroundColor: 'rgba(255,255,255,0.95)',
                     color: 'error.main',
+                    width: 40,
+                    height: 40,
+                    p: 1,
                     '&:hover': {
                       backgroundColor: 'white',
                       transform: 'scale(1.1)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                     },
                     boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                    border: '1px solid rgba(255,255,255,0.2)',
                   }}
                 >
                   <DeleteIcon fontSize="small" />
@@ -385,7 +639,7 @@ export default function BooksPage() {
   return (
     <ProtectedRoute>
       <Layout onAddBook={handleAddBook}>
-        <Box sx={{ flexGrow: 1, bgcolor: '#f8fafc', minHeight: '100vh' }}>
+        <Box sx={{ flexGrow: 1, bgcolor: (theme) => theme.palette.background.default, minHeight: '100vh' }}>
           <Container maxWidth="xl" sx={{ py: 4 }}>
             {/* Header */}
             <Box sx={{ mb: 6 }}>
@@ -397,7 +651,9 @@ export default function BooksPage() {
                     fontWeight="800" 
                     gutterBottom
                     sx={{ 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: (theme) => theme.palette.mode === 'dark' 
+                        ? 'linear-gradient(135deg, #8fa4f3 0%, #9c7bb8 100%)'
+                        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       backgroundClip: 'text',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
@@ -418,11 +674,19 @@ export default function BooksPage() {
                     minWidth: 160,
                     height: 48,
                     borderRadius: 3,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                    background: (theme) => theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(135deg, #8fa4f3 0%, #9c7bb8 100%)'
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: (theme) => theme.palette.mode === 'dark' 
+                      ? '0 4px 15px rgba(143, 164, 243, 0.4)'
+                      : '0 4px 15px rgba(102, 126, 234, 0.4)',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                      boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                      background: (theme) => theme.palette.mode === 'dark' 
+                        ? 'linear-gradient(135deg, #7c94f1 0%, #8a6bb5 100%)'
+                        : 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                      boxShadow: (theme) => theme.palette.mode === 'dark' 
+                        ? '0 6px 20px rgba(143, 164, 243, 0.6)'
+                        : '0 6px 20px rgba(102, 126, 234, 0.6)',
                     }
                   }}
                 >
@@ -436,7 +700,9 @@ export default function BooksPage() {
               sx={{ 
                 mb: 4,
                 borderRadius: 3,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                boxShadow: (theme) => theme.palette.mode === 'dark' 
+                  ? '0 4px 20px rgba(0,0,0,0.3)'
+                  : '0 4px 20px rgba(0,0,0,0.08)',
                 overflow: 'hidden'
               }}
             >
@@ -467,7 +733,7 @@ export default function BooksPage() {
                       <LibraryBooks />
                       <span>My Books</span>
                       <Chip 
-                        label={myBooks.length} 
+                        label={filteredMyBooks.length} 
                         size="small" 
                         color="primary" 
                         sx={{ minWidth: 24, height: 24 }}
@@ -481,7 +747,7 @@ export default function BooksPage() {
                       <Home />
                       <span>Browse Books</span>
                       <Chip 
-                        label={otherBooks.length} 
+                        label={filteredOtherBooks.length} 
                         size="small" 
                         color="secondary" 
                         sx={{ minWidth: 24, height: 24 }}
@@ -497,9 +763,13 @@ export default function BooksPage() {
               sx={{ 
                 mb: 4,
                 borderRadius: 4,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                boxShadow: (theme) => theme.palette.mode === 'dark' 
+                  ? '0 8px 32px rgba(0,0,0,0.3)'
+                  : '0 8px 32px rgba(0,0,0,0.12)',
                 border: 'none',
-                background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                background: (theme) => theme.palette.mode === 'dark' 
+                  ? 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)'
+                  : 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
                 overflow: 'hidden'
               }}
             >
@@ -519,8 +789,10 @@ export default function BooksPage() {
                       fullWidth
                       placeholder="Search by title, author, or ISBN..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setFilters(prev => ({ ...prev, page: 1 })); // Reset to first page when searching
+                      }}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -542,13 +814,19 @@ export default function BooksPage() {
                       sx={{ 
                         '& .MuiOutlinedInput-root': {
                           borderRadius: 3,
-                          backgroundColor: 'white',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                          backgroundColor: (theme) => theme.palette.background.paper,
+                          boxShadow: (theme) => theme.palette.mode === 'dark' 
+                            ? '0 2px 8px rgba(0,0,0,0.3)'
+                            : '0 2px 8px rgba(0,0,0,0.1)',
                           '&:hover': {
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            boxShadow: (theme) => theme.palette.mode === 'dark' 
+                              ? '0 4px 12px rgba(0,0,0,0.4)'
+                              : '0 4px 12px rgba(0,0,0,0.15)',
                           },
                           '&.Mui-focused': {
-                            boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
+                            boxShadow: (theme) => theme.palette.mode === 'dark' 
+                              ? '0 4px 20px rgba(143, 164, 243, 0.4)'
+                              : '0 4px 20px rgba(102, 126, 234, 0.3)',
                           }
                         }
                       }}
@@ -556,27 +834,6 @@ export default function BooksPage() {
                   </Box>
                   
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <Button
-                      variant="contained"
-                      onClick={handleSearch}
-                      startIcon={<SearchIcon />}
-                      sx={{
-                        borderRadius: 3,
-                        px: 4,
-                        py: 1.5,
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                          boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
-                          transform: 'translateY(-2px)',
-                        },
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      Search
-                    </Button>
-                    
                     <Button
                       variant="outlined"
                       onClick={handleClearFilters}
@@ -601,21 +858,117 @@ export default function BooksPage() {
                     <FormControl sx={{ minWidth: 160 }}>
                       <InputLabel sx={{ color: 'text.secondary' }}>Items per page</InputLabel>
                       <Select
-                        value={filters.limit || 12}
+                        value={filters.limit || 16}
                         label="Items per page"
-                        onChange={(e) => setFilters(prev => ({ ...prev, limit: e.target.value as number, page: 1 }))}
+                        onChange={(e) => {
+                          const newLimit = e.target.value as number;
+                          setFilters(prev => ({ ...prev, limit: newLimit, page: 1 }));
+                          setLoadedItems(newLimit);
+                        }}
                         sx={{ 
                           borderRadius: 3,
-                          backgroundColor: 'white',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                          backgroundColor: (theme) => theme.palette.background.paper,
+                          boxShadow: (theme) => theme.palette.mode === 'dark' 
+                            ? '0 2px 8px rgba(0,0,0,0.3)'
+                            : '0 2px 8px rgba(0,0,0,0.1)',
                         }}
                       >
-                        <MenuItem value={6}>6 per page</MenuItem>
-                        <MenuItem value={12}>12 per page</MenuItem>
-                        <MenuItem value={24}>24 per page</MenuItem>
-                        <MenuItem value={48}>48 per page</MenuItem>
+                        <MenuItem value={8}>8 per page</MenuItem>
+                        <MenuItem value={16}>16 per page</MenuItem>
+                        <MenuItem value={32}>32 per page</MenuItem>
+                        <MenuItem value={64}>64 per page</MenuItem>
                       </Select>
                     </FormControl>
+
+                    {/* View Toggle Buttons */}
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                        View:
+                      </Typography>
+                      <Tooltip title="Card View">
+                        <IconButton
+                          onClick={() => setViewMode('card')}
+                          sx={{
+                            backgroundColor: viewMode === 'card' ? 'primary.main' : 'transparent',
+                            color: viewMode === 'card' ? 'white' : 'text.secondary',
+                            border: '1px solid',
+                            borderColor: viewMode === 'card' ? 'primary.main' : 'divider',
+                            borderRadius: 2,
+                            '&:hover': {
+                              backgroundColor: viewMode === 'card' ? 'primary.dark' : 'action.hover',
+                              borderColor: 'primary.main',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <CardViewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="List View">
+                        <IconButton
+                          onClick={() => setViewMode('list')}
+                          sx={{
+                            backgroundColor: viewMode === 'list' ? 'primary.main' : 'transparent',
+                            color: viewMode === 'list' ? 'white' : 'text.secondary',
+                            border: '1px solid',
+                            borderColor: viewMode === 'list' ? 'primary.main' : 'divider',
+                            borderRadius: 2,
+                            '&:hover': {
+                              backgroundColor: viewMode === 'list' ? 'primary.dark' : 'action.hover',
+                              borderColor: 'primary.main',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <ListViewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    
+                    {/* Pagination Mode Toggle */}
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                        Mode:
+                      </Typography>
+                      <Tooltip title="Pagination">
+                        <IconButton
+                          onClick={() => handleViewModeChange('pagination')}
+                          sx={{
+                            backgroundColor: !useLoadMore ? 'primary.main' : 'transparent',
+                            color: !useLoadMore ? 'white' : 'text.secondary',
+                            border: '1px solid',
+                            borderColor: !useLoadMore ? 'primary.main' : 'divider',
+                            borderRadius: 2,
+                            '&:hover': {
+                              backgroundColor: !useLoadMore ? 'primary.dark' : 'action.hover',
+                              borderColor: 'primary.main',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <CardViewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Load More">
+                        <IconButton
+                          onClick={() => handleViewModeChange('loadmore')}
+                          sx={{
+                            backgroundColor: useLoadMore ? 'primary.main' : 'transparent',
+                            color: useLoadMore ? 'white' : 'text.secondary',
+                            border: '1px solid',
+                            borderColor: useLoadMore ? 'primary.main' : 'divider',
+                            borderRadius: 2,
+                            '&:hover': {
+                              backgroundColor: useLoadMore ? 'primary.dark' : 'action.hover',
+                              borderColor: 'primary.main',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <LoadMoreIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </Box>
                 </Box>
               </CardContent>
@@ -633,6 +986,7 @@ export default function BooksPage() {
                 </Alert>
               ) : (
                 <>
+                  {viewMode === 'card' ? (
                   <Box sx={{ 
                     display: 'grid', 
                     gridTemplateColumns: {
@@ -645,10 +999,15 @@ export default function BooksPage() {
                     gap: 4,
                     px: 1
                   }}>
-                    {myBooks.map((book) => renderBookCard(book, true))}
+                      {paginatedMyBooks.map((book) => renderBookCard(book, true))}
                   </Box>
+                  ) : (
+                    <Box sx={{ px: 1 }}>
+                      {paginatedMyBooks.map((book) => renderBookListItem(book, true))}
+                    </Box>
+                  )}
                   
-                  {myBooks.length === 0 && (
+                  {filteredMyBooks.length === 0 && (
                     <Box sx={{ textAlign: 'center', py: 8 }}>
                       <Box
                         sx={{
@@ -694,7 +1053,35 @@ export default function BooksPage() {
                     </Box>
                   )}
                   
-                  {myBooksTotalPages > 1 && (
+                  {/* Pagination or Load More */}
+                  {useLoadMore ? (
+                    // Load More Mode
+                    hasMoreMyBooks && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                        <Button
+                          variant="contained"
+                          startIcon={<LoadMoreIcon />}
+                          onClick={handleLoadMore}
+                          size="large"
+                          sx={{
+                            borderRadius: 3,
+                            px: 4,
+                            py: 1.5,
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                              boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                            }
+                          }}
+                        >
+                          Load More ({filteredMyBooks.length - loadedItems} remaining)
+                        </Button>
+                      </Box>
+                    )
+                  ) : (
+                    // Pagination Mode
+                    myBooksTotalPages > 1 && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                       <Pagination
                         count={myBooksTotalPages}
@@ -703,6 +1090,7 @@ export default function BooksPage() {
                         color="primary"
                       />
                     </Box>
+                    )
                   )}
                 </>
               )}
@@ -720,6 +1108,7 @@ export default function BooksPage() {
                 </Alert>
               ) : (
                 <>
+                  {viewMode === 'card' ? (
                   <Box sx={{ 
                     display: 'grid', 
                     gridTemplateColumns: {
@@ -732,10 +1121,15 @@ export default function BooksPage() {
                     gap: 4,
                     px: 1
                   }}>
-                    {otherBooks.map((book) => renderBookCard(book, false))}
+                      {paginatedOtherBooks.map((book) => renderBookCard(book, false))}
                   </Box>
+                  ) : (
+                    <Box sx={{ px: 1 }}>
+                      {paginatedOtherBooks.map((book) => renderBookListItem(book, false))}
+                    </Box>
+                  )}
                   
-                  {otherBooks.length === 0 && (
+                  {filteredOtherBooks.length === 0 && (
                     <Box sx={{ textAlign: 'center', py: 8 }}>
                       <LibraryBooks sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                       <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -747,15 +1141,44 @@ export default function BooksPage() {
                     </Box>
                   )}
                   
-                  {allBooksTotalPages > 1 && (
+                  {/* Pagination or Load More */}
+                  {useLoadMore ? (
+                    // Load More Mode
+                    hasMoreOtherBooks && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                        <Button
+                          variant="contained"
+                          startIcon={<LoadMoreIcon />}
+                          onClick={handleLoadMore}
+                          size="large"
+                          sx={{
+                            borderRadius: 3,
+                            px: 4,
+                            py: 1.5,
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                              boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                            }
+                          }}
+                        >
+                          Load More ({filteredOtherBooks.length - loadedItems} remaining)
+                        </Button>
+                      </Box>
+                    )
+                  ) : (
+                    // Pagination Mode
+                    otherBooksTotalPages > 1 && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                       <Pagination
-                        count={allBooksTotalPages}
+                          count={otherBooksTotalPages}
                         page={filters.page || 1}
                         onChange={handlePageChange}
                         color="primary"
                       />
                     </Box>
+                    )
                   )}
                 </>
               )}

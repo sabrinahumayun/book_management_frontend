@@ -23,9 +23,12 @@ declare module '@mui/icons-material' {
   export const Add: SvgIconComponent;
   export const Settings: SvgIconComponent;
   export const Edit: SvgIconComponent;
+  export const Delete: SvgIconComponent;
   export const Save: SvgIconComponent;
   export const ArrowBack: SvgIconComponent;
   export const Menu: SvgIconComponent;
   export const LogOut: SvgIconComponent;
   export const Home: SvgIconComponent;
+  export const Apps: SvgIconComponent;
+  export const List: SvgIconComponent;
 }
