@@ -79,8 +79,9 @@ export default function SignupPage() {
         toast.error('Passwords do not match. Please try again.');
         return;
       }
+      const { confirmPassword, ...payload } = data;
 
-      registerUser(data);
+      registerUser(payload);
     }
   };
 

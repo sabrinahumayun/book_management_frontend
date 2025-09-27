@@ -71,7 +71,6 @@ export default function EditUserModal({ open, onClose, user }: EditUserModalProp
     const updateData: UpdateUserData = {
       firstName: data.firstName,
       lastName: data.lastName,
-      email: data.email,
       role: data.role,
       isActive: data.isActive,
     };
