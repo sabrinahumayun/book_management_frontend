@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Drawer,
@@ -20,9 +20,11 @@ import {
   Dashboard,
   LibraryBooks,
   RateReview,
-  People,
-  ArrowForward as OpenInNewIcon,
+  Apps as LeaveToApp,
+
 } from '@mui/icons-material';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+
 import CloseIcon from '@mui/icons-material/Close';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useRouter, usePathname } from 'next/navigation';
@@ -56,40 +58,16 @@ export default function Sidebar({ open, onClose, onAddBook }: SidebarProps) {
     page: 1 
   });
   
-  // More robust count calculation
-  const myBooksCount = React.useMemo(() => {
-    if (!myBooksResponse) return 0;
-    if (Array.isArray(myBooksResponse.data)) {
-      return myBooksResponse.data.length;
-    }
-    if (Array.isArray(myBooksResponse)) {
-      return myBooksResponse.length;
-    }
-    return 0;
-  }, [myBooksResponse]);
 
-  const totalBooksCount = React.useMemo(() => {
-    if (!allBooksResponse) return 0;
-    if (Array.isArray(allBooksResponse.data)) {
-      return allBooksResponse.data.length;
-    }
-    if (Array.isArray(allBooksResponse)) {
-      return allBooksResponse.length;
-    }
-    return 0;
-  }, [allBooksResponse]);
-
-  
   const navigationItems = [
     ...(isAdmin ? [
-      { name: 'Admin Dashboard', href: '/admin/dashboard', icon: Dashboard, badge: null },
+      { name: 'Dashboard', href: '/books', icon: Dashboard, badge: null },
     ] : [
       { name: 'Dashboard', href: '/books', icon: Dashboard, hasNewTabOption: true },
     ]),
     { name: 'My Feedback', href: '/my-reviews', icon: RateReview, badge: null },
     ...(isAdmin ? [
-      { name: 'All Books', href: '/admin/books', icon: People, badge: totalBooksCount },
-      { name: 'Feedback', href: '/admin/feedback', icon: RateReview, badge: null },
+      { name: 'Admin Portal', href: '/admin/dashboard', icon: LeaveToApp, badge: null, hasNewTabOption: true },
     ] : []),
   ];
 

@@ -17,14 +17,14 @@ export async function middleware(request: NextRequest) {
 
   // If user is authenticated and tries to access login/signup, redirect to app home (e.g., /books)
   if (isAuthenticated && isPublicRoute) {
-    if (user.role === 'admin') {
+    if (user?.role === 'admin') {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
     return NextResponse.redirect(new URL('/books', request.url));
   }
   
 
-  if (isAuthenticated && user.role !== 'admin' && adminRoutes.some(route => pathname.startsWith(route))) {
+  if (isAuthenticated && user?.role !== 'admin' && adminRoutes.some(route => pathname.startsWith(route))) {
     return NextResponse.redirect(new URL('/books', request.url)); 
   }
 
