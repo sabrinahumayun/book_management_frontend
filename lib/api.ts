@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
+import { getAuthToken, setAuthToken, setUserData } from './authStorage';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -11,8 +12,8 @@ const api = axios.create({
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
+  async (config) => {
+    const token = await getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,6 +31,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
+      setUserData(null)
+      setAuthToken('')
       window.location.href = '/login';
     }
     return Promise.reject(error);

@@ -1,20 +1,39 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getAuthToken } from './lib/authStorage';
+import { getAuthToken, getUser } from './lib/authStorage';
 
 export async function middleware(request: NextRequest) {
   const token = await getAuthToken();
+  const user = await getUser();
   const { pathname } = request.nextUrl;
 
-  // Public routes that don't require authentication
   const publicRoutes = ['/login', '/signup'];
-  
-  // Check if the current path is a public route
+  const adminRoutes = ['/admin']
+
+  console.log(token)
+
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  const isAuthenticated = !!token;
 
-
+  // If user is authenticated and tries to access login/signup, redirect to app home (e.g., /books)
+  if (isAuthenticated && isPublicRoute) {
+    if (user.role === 'admin') {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+    return NextResponse.redirect(new URL('/books', request.url));
+  }
   
 
+  if (isAuthenticated && user.role !== 'admin' && adminRoutes.some(route => pathname.startsWith(route))) {
+    return NextResponse.redirect(new URL('/books', request.url)); 
+  }
+
+  // If user is NOT authenticated and tries to access protected routes, redirect to login
+  if (!isAuthenticated && !isPublicRoute) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  // Otherwise, allow the request
   return NextResponse.next();
 }
 

@@ -25,7 +25,7 @@ export async function removeAuthToken() {
   cookieStore.delete('authToken');
 }
 
-export async function setUser(user: any) {
+export async function setUserData(user: any) {
   const cookieStore = await cookies();
   cookieStore.set('user', JSON.stringify(user), {
     httpOnly: true,
