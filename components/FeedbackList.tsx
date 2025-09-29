@@ -24,6 +24,7 @@ import {
 import { useFeedbackByBook, useDeleteFeedback } from '@/hooks/useFeedback';
 import { Feedback } from '@/types/feedback';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'react-toastify';
 
 interface FeedbackListProps {
   bookId: number;
@@ -48,7 +49,15 @@ export default function FeedbackList({ bookId, onEditFeedback }: FeedbackListPro
 
   const handleDeleteFeedback = (feedbackId: number) => {
     if (window.confirm('Are you sure you want to delete this feedback?')) {
-      deleteFeedbackMutation.mutate(feedbackId);
+      deleteFeedbackMutation.mutate(feedbackId, {
+        onSuccess: () => {
+          toast.success('Review deleted successfully! 🗑️');
+        },
+        onError: (error: any) => {
+          const errorMessage = error?.response?.data?.message || 'Failed to delete review';
+          toast.error(errorMessage);
+        },
+      });
     }
   };
 

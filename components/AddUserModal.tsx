@@ -23,6 +23,7 @@ import {
 } from '@mui/material';
 import { useCreateUser } from '@/hooks/useUsers';
 import { CreateUserData } from '@/lib/usersApi';
+import { toast } from 'react-toastify';
 
 interface AddUserModalProps {
   open: boolean;
@@ -64,6 +65,7 @@ export default function AddUserModal({ open, onClose }: AddUserModalProps) {
 
     createUserMutation.mutate(userData, {
       onSuccess: () => {
+        toast.success(`User ${data.firstName} ${data.lastName} created successfully! 👤`);
         setShowSuccessMessage(true);
         setTimeout(() => {
           onClose();
@@ -73,6 +75,8 @@ export default function AddUserModal({ open, onClose }: AddUserModalProps) {
       },
       onError: (error) => {
         console.error('Error creating user:', error);
+        const errorMessage = getErrorMessage();
+        toast.error(errorMessage);
       },
     });
   };
@@ -330,17 +334,6 @@ export default function AddUserModal({ open, onClose }: AddUserModalProps) {
         </DialogActions>
       </Dialog>
 
-      {/* Success Message */}
-      <Snackbar
-        open={showSuccessMessage}
-        autoHideDuration={3000}
-        onClose={() => setShowSuccessMessage(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert severity="success" onClose={() => setShowSuccessMessage(false)}>
-          User created successfully!
-        </Alert>
-      </Snackbar>
     </>
   );
 }
