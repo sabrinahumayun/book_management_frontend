@@ -44,18 +44,16 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminLayout from '@/components/AdminLayout';
 import { useBooks, useCreateBook, useUpdateBook, useDeleteBook, useBulkDeleteBooks } from '@/hooks/useBooks';
 import { Book, CreateBookData, UpdateBookData, BookFilters } from '@/types/books';
 import BulkDeleteDialog from '@/components/BulkDeleteDialog';
 import { toast } from 'react-toastify';
+import { bookSchema, type BookFormData } from '@/lib/validations/schemas';
 
-interface BookFormData {
-  title: string;
-  author: string;
-  isbn: string;
-}
+// BookFormData is now imported from schemas
 
 export default function AdminBooksPage() {
   const [open, setOpen] = useState(false);
@@ -81,6 +79,7 @@ export default function AdminBooksPage() {
     reset,
     formState: { errors },
   } = useForm<BookFormData>({
+    resolver: zodResolver(bookSchema),
     defaultValues: {
       title: '',
       author: '',
@@ -528,23 +527,6 @@ export default function AdminBooksPage() {
                 <Controller
                   name="title"
                   control={control}
-                  rules={{
-                    required: 'Title is required',
-                    minLength: {
-                      value: 2,
-                      message: 'Title must be at least 2 characters',
-                    },
-                    maxLength: {
-                      value: 200,
-                      message: 'Title must not exceed 200 characters',
-                    },
-                    validate: (value) => {
-                      if (value.trim().length < 2) {
-                        return 'Title cannot be empty or just spaces';
-                      }
-                      return true;
-                    },
-                  }}
                   render={({ field }) => (
                     <TextField
                       {...field}
@@ -560,27 +542,6 @@ export default function AdminBooksPage() {
                 <Controller
                   name="author"
                   control={control}
-                  rules={{
-                    required: 'Author is required',
-                    minLength: {
-                      value: 2,
-                      message: 'Author must be at least 2 characters',
-                    },
-                    maxLength: {
-                      value: 100,
-                      message: 'Author name must not exceed 100 characters',
-                    },
-                    validate: (value) => {
-                      if (value.trim().length < 2) {
-                        return 'Author name cannot be empty or just spaces';
-                      }
-                      // Check for valid author name format (letters, spaces, hyphens, apostrophes)
-                      if (!/^[a-zA-Z\s\-'\.]+$/.test(value)) {
-                        return 'Author name can only contain letters, spaces, hyphens, apostrophes, and periods';
-                      }
-                      return true;
-                    },
-                  }}
                   render={({ field }) => (
                     <TextField
                       {...field}
@@ -596,29 +557,6 @@ export default function AdminBooksPage() {
                 <Controller
                   name="isbn"
                   control={control}
-                  rules={{
-                    required: 'ISBN is required',
-                    pattern: {
-                      value: /^[\d-]+$/,
-                      message: 'ISBN must contain only numbers and hyphens',
-                    },
-                    minLength: {
-                      value: 10,
-                      message: 'ISBN must be at least 10 characters',
-                    },
-                    maxLength: {
-                      value: 17,
-                      message: 'ISBN must not exceed 17 characters',
-                    },
-                    validate: (value) => {
-                      // Remove hyphens for validation
-                      const cleanIsbn = value.replace(/-/g, '');
-                      if (cleanIsbn.length < 10 || cleanIsbn.length > 13) {
-                        return 'ISBN must be 10 or 13 digits';
-                      }
-                      return true;
-                    },
-                  }}
                   render={({ field }) => (
                     <TextField
                       {...field}

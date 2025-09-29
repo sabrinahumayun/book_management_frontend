@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Box,
   Button,
@@ -25,14 +26,11 @@ import {
   LibraryBooks,
 } from '@mui/icons-material';
 import { useAuth } from '@/hooks/useAuth';
-import { validateEmail } from '@/lib/utils';
 import DarkModeToggle from '@/components/DarkModeToggle';
 import { toast } from 'react-toastify';
+import { loginSchema, type LoginFormData } from '@/lib/validations/schemas';
 
-interface LoginFormData {
-  email: string;
-  password: string;
-}
+// LoginFormData is now imported from schemas
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -52,6 +50,7 @@ export default function LoginPage() {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
@@ -119,10 +118,6 @@ export default function LoginPage() {
                   <Controller 
                     name="email"
                     control={control}
-                    rules={{
-                      required: 'Email is required',
-                      validate: (value) => validateEmail(value) || 'Please enter a valid email',
-                    }}
                     render={({ field }) => (
                       <TextField
                         {...field}
@@ -149,13 +144,6 @@ export default function LoginPage() {
                   <Controller
                     name="password"
                     control={control}
-                    rules={{
-                      required: 'Password is required',
-                      minLength: {
-                        value: 6,
-                        message: 'Password must be at least 6 characters',
-                      },
-                    }}
                     render={({ field }) => (
                       <TextField
                         {...field}
