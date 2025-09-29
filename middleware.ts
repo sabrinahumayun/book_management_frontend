@@ -28,10 +28,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/books', request.url)); 
   }
 
-  // If user is NOT authenticated and tries to access protected routes, redirect to login
-  if (!isAuthenticated && !isPublicRoute) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  // // If user is NOT authenticated and tries to access protected routes, redirect to login
+  // if (!isAuthenticated && !isPublicRoute) {
+  //   return NextResponse.redirect(new URL('/login', request.url));
+  // }
 
   // Otherwise, allow the request
   return NextResponse.next();

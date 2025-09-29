@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Box,
   Button,
@@ -31,14 +32,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { validateEmail, validatePassword } from '@/lib/utils';
 import DarkModeToggle from '@/components/DarkModeToggle';
 import { toast } from 'react-toastify';
+import { userSchema, type UserFormData } from '@/lib/validations/schemas';
 
-interface SignupFormData {
-  email: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-  confirmPassword: string;
-}
+// SignupFormData is now imported from schemas as UserFormData
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -52,13 +48,16 @@ export default function SignupPage() {
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<SignupFormData>({
+  } = useForm<UserFormData>({
+    resolver: zodResolver(userSchema),
     defaultValues: {
       email: '',
       firstName: '',
       lastName: '',
       password: '',
       confirmPassword: '',
+      role: 'user',
+      isActive: true,
     },
   });
 
@@ -72,15 +71,10 @@ export default function SignupPage() {
     }
   }, [registerError]);
 
-  const handleFormSubmit = (data: SignupFormData) => {
+  const handleFormSubmit = (data: UserFormData) => {
     if (!isRegistering) {
-      // Validate passwords match
-      if (data.password !== data.confirmPassword) {
-        toast.error('Passwords do not match. Please try again.');
-        return;
-      }
-      const { confirmPassword, ...payload } = data;
-
+      // Zod validation already handles password matching
+      const { confirmPassword,isActive, ...payload } = data;
       registerUser(payload);
     }
   };
@@ -144,10 +138,6 @@ export default function SignupPage() {
                   <Controller
                     name="email"
                     control={control}
-                    rules={{
-                      required: 'Email is required',
-                      validate: (value) => validateEmail(value) || 'Please enter a valid email',
-                    }}
                     render={({ field }) => (
                       <TextField
                         {...field}
@@ -174,13 +164,6 @@ export default function SignupPage() {
                     <Controller
                       name="firstName"
                       control={control}
-                      rules={{
-                        required: 'First name is required',
-                        minLength: {
-                          value: 2,
-                          message: 'First name must be at least 2 characters',
-                        },
-                      }}
                       render={({ field }) => (
                         <TextField
                           {...field}
@@ -205,13 +188,6 @@ export default function SignupPage() {
                     <Controller
                       name="lastName"
                       control={control}
-                      rules={{
-                        required: 'Last name is required',
-                        minLength: {
-                          value: 2,
-                          message: 'Last name must be at least 2 characters',
-                        },
-                      }}
                       render={({ field }) => (
                         <TextField
                           {...field}
@@ -237,13 +213,6 @@ export default function SignupPage() {
                   <Controller
                     name="password"
                     control={control}
-                    rules={{
-                      required: 'Password is required',
-                      validate: (value) => {
-                        const validation = validatePassword(value);
-                        return validation.isValid || validation.message;
-                      },
-                    }}
                     render={({ field }) => (
                       <TextField
                         {...field}
@@ -279,10 +248,6 @@ export default function SignupPage() {
                   <Controller
                     name="confirmPassword"
                     control={control}
-                    rules={{
-                      required: 'Please confirm your password',
-                      validate: (value) => value === password || 'Passwords do not match',
-                    }}
                     render={({ field }) => (
                       <TextField
                         {...field}

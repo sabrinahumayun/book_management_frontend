@@ -31,7 +31,6 @@ import DarkModeToggle from '@/components/DarkModeToggle';
 export default function Home() {
   const { isAuthenticated, user, isLoading } = useAuth();
   const router = useRouter();
-
   // Show loading only briefly to avoid flash
   if (isLoading) {
     return (

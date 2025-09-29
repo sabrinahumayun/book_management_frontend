@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { authAPI } from '@/lib/api';
 import { LoginCredentials, RegisterData, User, AuthResponse } from '@/types/auth';
-import { getAuthToken, getUser, setAuthToken, setUserData } from '@/lib/authStorage';
+import { getAuthToken, getUser, setAuthToken, setUserData, removeAuthToken, removeUser } from '@/lib/authStorage';
 import { toast } from 'react-toastify';
 
 // Query keys
@@ -29,13 +29,25 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize user from localStorage on client side
+  // Initialize user from server-side cookies
   useEffect(() => {
     const fetchUser = async () => {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-      setUserData(currentUser)
-      setIsInitialized(true);
+      try {
+        const token = await getAuthToken();
+        if (!token) {
+          setUser(null);
+          setIsInitialized(true);
+          return;
+        }
+        
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error initializing user:', error);
+        setUser(null);
+        setIsInitialized(true);
+      }
     }
     fetchUser();
   }, []);
@@ -50,12 +62,17 @@ export function useAuth() {
       }
       
       const token = await getAuthToken();
-      if (!token) return null;
+      if (!token) {
+        setUser(null);
+        return null;
+      }
       
       try {
         const response = await authAPI.getProfile();
         return response.user || null;
       } catch (error) {
+        // If profile fetch fails, clear user state
+        setUser(null);
         return null;
       }
     },
@@ -126,15 +143,28 @@ export function useAuth() {
   });
 
   // Logout function
-  const logout = () => {
-    setUser(null);
-    setAuthToken('')
-    queryClient.clear();
-    
-    // Show success toast
-    toast.success('Logged out successfully! 👋');
-    
-    router.push('/login');
+  const logout = async () => {
+    try {
+      // Clear server-side cookies
+      await removeAuthToken();
+      await removeUser();
+      
+      // Clear client-side state
+      setUser(null);
+      queryClient.clear();
+      
+      // Show success toast
+      toast.success('Logged out successfully! 👋');
+      
+      // Redirect to home
+      router.push('/');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Even if cookie clearing fails, clear client state
+      setUser(null);
+      queryClient.clear();
+      router.push('/');
+    }
   };
 
   // Helper functions
