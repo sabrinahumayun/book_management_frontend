@@ -380,7 +380,7 @@ export default function Home() {
                   </Typography>
                 </Box>
             <Typography variant="body2" color="grey.400" sx={{ mb: 2 }}>
-              © 2024 Book Management Portal. All rights reserved.
+              © 2025 Book Management Portal. All rights reserved.
             </Typography>
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3 }}>
               <Button color="inherit" size="small">Privacy Policy</Button>

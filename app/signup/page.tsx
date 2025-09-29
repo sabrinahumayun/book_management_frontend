@@ -368,7 +368,7 @@ export default function SignupPage() {
 
         <Box sx={{ textAlign: 'center', mt: 3 }}>
           <Typography variant="caption" color="white" sx={{ opacity: 0.8 }}>
-            © 2024 Book Management Portal. All rights reserved.
+            © 2025 Book Management Portal. All rights reserved.
           </Typography>
         </Box>
       </Container>
