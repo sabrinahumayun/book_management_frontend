@@ -124,8 +124,13 @@ export default function AdminUsersPage() {
     if (selectedUser) {
       deleteUserMutation.mutate(selectedUser.id, {
         onSuccess: () => {
+          toast.success(`User ${selectedUser.firstName} ${selectedUser.lastName} deleted successfully! 🗑️`);
           setDeleteDialogOpen(false);
           setSelectedUser(null);
+        },
+        onError: (error: any) => {
+          const errorMessage = error?.response?.data?.message || 'Failed to delete user';
+          toast.error(errorMessage);
         },
       });
     }

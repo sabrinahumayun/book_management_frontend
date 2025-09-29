@@ -23,6 +23,7 @@ import {
 } from '@mui/material';
 import { useUpdateUser } from '@/hooks/useUsers';
 import { User, UpdateUserData } from '@/types/auth';
+import { toast } from 'react-toastify';
 
 interface EditUserModalProps {
   open: boolean;
@@ -79,6 +80,7 @@ export default function EditUserModal({ open, onClose, user }: EditUserModalProp
       { id: user.id, data: updateData },
       {
         onSuccess: () => {
+          toast.success(`User ${data.firstName} ${data.lastName} updated successfully! ✏️`);
           setShowSuccessMessage(true);
           setTimeout(() => {
             onClose();
@@ -87,6 +89,8 @@ export default function EditUserModal({ open, onClose, user }: EditUserModalProp
         },
         onError: (error) => {
           console.error('Error updating user:', error);
+          const errorMessage = getErrorMessage();
+          toast.error(errorMessage);
         },
       }
     );
@@ -319,17 +323,6 @@ export default function EditUserModal({ open, onClose, user }: EditUserModalProp
         </DialogActions>
       </Dialog>
 
-      {/* Success Message */}
-      <Snackbar
-        open={showSuccessMessage}
-        autoHideDuration={3000}
-        onClose={() => setShowSuccessMessage(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert severity="success" onClose={() => setShowSuccessMessage(false)}>
-          User updated successfully!
-        </Alert>
-      </Snackbar>
     </>
   );
 }

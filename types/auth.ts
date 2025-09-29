@@ -40,3 +40,10 @@ export interface ApiError {
   status: number;
   errors?: Record<string, string[]>;
 }
+
+export interface UpdateUserData {
+  firstName?: string;
+  lastName?: string;
+  role?: 'admin' | 'user';
+  isActive?: boolean;
+}

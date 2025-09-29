@@ -112,7 +112,15 @@ export default function AdminBooksPage() {
 
   const handleDelete = (id: number) => {
     if (window.confirm('Are you sure you want to delete this book?')) {
-      deleteBookMutation.mutate(id);
+      deleteBookMutation.mutate(id, {
+        onSuccess: () => {
+          toast.success('Book deleted successfully! 🗑️');
+        },
+        onError: (error: any) => {
+          const errorMessage = error?.response?.data?.message || 'Failed to delete book';
+          toast.error(errorMessage);
+        },
+      });
     }
   };
 
@@ -122,17 +130,77 @@ export default function AdminBooksPage() {
         { id: editingBook.id, data: data as UpdateBookData },
         {
           onSuccess: () => {
+            toast.success('Book updated successfully! ✏️');
             handleClose();
+          },
+          onError: (error: any) => {
+            const errorMessage = getErrorMessage(error, 'update');
+            toast.error(errorMessage);
           },
         }
       );
     } else {
       createBookMutation.mutate(data as CreateBookData, {
         onSuccess: () => {
+          toast.success('Book added successfully! 📚');
           handleClose();
+        },
+        onError: (error: any) => {
+          const errorMessage = getErrorMessage(error, 'create');
+          toast.error(errorMessage);
         },
       });
     }
+  };
+
+  const getErrorMessage = (error: any, operation: 'create' | 'update') => {
+    const response = error?.response;
+    const status = response?.status;
+    const data = response?.data;
+
+    // Handle validation errors (400)
+    if (status === 400) {
+      if (data?.errors) {
+        // Handle field-specific validation errors
+        const fieldErrors = Object.entries(data.errors)
+          .map(([field, message]) => `${field}: ${message}`)
+          .join(', ');
+        return `Validation failed: ${fieldErrors}`;
+      }
+      
+      if (data?.message) {
+        // Handle general validation messages
+        if (data.message.includes('ISBN')) {
+          return 'Invalid ISBN format. Please check the ISBN number.';
+        }
+        if (data.message.includes('author')) {
+          return 'Invalid author name. Please check the author field.';
+        }
+        if (data.message.includes('title')) {
+          return 'Invalid title. Please check the title field.';
+        }
+        return data.message;
+      }
+    }
+
+    // Handle duplicate ISBN error (409)
+    if (status === 409) {
+      return 'A book with this ISBN already exists. Please use a different ISBN.';
+    }
+
+    // Handle unauthorized access (401/403)
+    if (status === 401 || status === 403) {
+      return 'You are not authorized to perform this action.';
+    }
+
+    // Handle server errors (500)
+    if (status >= 500) {
+      return 'Server error. Please try again later.';
+    }
+
+    // Default error message
+    const defaultMessage = operation === 'create' ? 'Failed to add book' : 'Failed to update book';
+    return data?.message || error?.message || defaultMessage;
   };
 
   const handleSearch = () => {
@@ -145,7 +213,7 @@ export default function AdminBooksPage() {
     delete searchFilters.title;
     delete searchFilters.author;
     delete searchFilters.isbn;
-    delete searchFilters.createdBy;
+    // delete searchFilters.createdBy;
 
     // Set the appropriate search field based on searchType
     if (searchTerm) {
@@ -159,9 +227,9 @@ export default function AdminBooksPage() {
         case 'isbn':
           searchFilters.isbn = searchTerm;
           break;
-        case 'createdBy':
-          searchFilters.createdBy = searchTerm;
-          break;
+        // case 'createdBy':
+        //   searchFilters.createdBy = searchTerm;
+        //   break;
       }
     }
 
@@ -466,12 +534,23 @@ export default function AdminBooksPage() {
                       value: 2,
                       message: 'Title must be at least 2 characters',
                     },
+                    maxLength: {
+                      value: 200,
+                      message: 'Title must not exceed 200 characters',
+                    },
+                    validate: (value) => {
+                      if (value.trim().length < 2) {
+                        return 'Title cannot be empty or just spaces';
+                      }
+                      return true;
+                    },
                   }}
                   render={({ field }) => (
                     <TextField
                       {...field}
                       fullWidth
-                      label="Title"
+                      label="Book Title"
+                      placeholder="Enter the book title"
                       error={!!errors.title}
                       helperText={errors.title?.message}
                     />
@@ -487,12 +566,27 @@ export default function AdminBooksPage() {
                       value: 2,
                       message: 'Author must be at least 2 characters',
                     },
+                    maxLength: {
+                      value: 100,
+                      message: 'Author name must not exceed 100 characters',
+                    },
+                    validate: (value) => {
+                      if (value.trim().length < 2) {
+                        return 'Author name cannot be empty or just spaces';
+                      }
+                      // Check for valid author name format (letters, spaces, hyphens, apostrophes)
+                      if (!/^[a-zA-Z\s\-'\.]+$/.test(value)) {
+                        return 'Author name can only contain letters, spaces, hyphens, apostrophes, and periods';
+                      }
+                      return true;
+                    },
                   }}
                   render={({ field }) => (
                     <TextField
                       {...field}
                       fullWidth
-                      label="Author"
+                      label="Author Name"
+                      placeholder="Enter the author's name"
                       error={!!errors.author}
                       helperText={errors.author?.message}
                     />
@@ -508,14 +602,31 @@ export default function AdminBooksPage() {
                       value: /^[\d-]+$/,
                       message: 'ISBN must contain only numbers and hyphens',
                     },
+                    minLength: {
+                      value: 10,
+                      message: 'ISBN must be at least 10 characters',
+                    },
+                    maxLength: {
+                      value: 17,
+                      message: 'ISBN must not exceed 17 characters',
+                    },
+                    validate: (value) => {
+                      // Remove hyphens for validation
+                      const cleanIsbn = value.replace(/-/g, '');
+                      if (cleanIsbn.length < 10 || cleanIsbn.length > 13) {
+                        return 'ISBN must be 10 or 13 digits';
+                      }
+                      return true;
+                    },
                   }}
                   render={({ field }) => (
                     <TextField
                       {...field}
                       fullWidth
                       label="ISBN"
+                      placeholder="e.g., 978-0-123456-78-9"
                       error={!!errors.isbn}
-                      helperText={errors.isbn?.message}
+                      helperText={errors.isbn?.message || 'Enter ISBN-10 or ISBN-13 format'}
                     />
                   )}
                 />
